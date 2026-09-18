@@ -66,14 +66,43 @@ object EduPageParser {
         val periods = periodRows.associateBy { it.optString("period", it.getString("id")) }
         val bells = index("bells")
         fun names(ids: List<String>, source: Map<String, JSONObject>) = ids.map { source[it]?.let(::name) ?: it }.joinToString(", ")
-        fun time(period: String, bell: String, day: Int, field: String): LocalTime? {
+        fun parseClock(value: String): LocalTime? {
+            val parts = value.trim().split(":")
+            if (parts.size != 2) return null
+            val hour = parts[0].toIntOrNull() ?: return null
+            val minute = parts[1].toIntOrNull() ?: return null
+            return runCatching { LocalTime.of(hour, minute) }.getOrNull()
+        }
+        fun objectRange(value: JSONObject?): Pair<LocalTime, LocalTime>? {
+            value ?: return null
+            val start = parseClock(value.optString("starttime")) ?: return null
+            val end = parseClock(value.optString("endtime")) ?: return null
+            return (start to end).takeIf { end > start }
+        }
+        fun labelRange(base: JSONObject): Pair<LocalTime, LocalTime>? {
+            val range = Regex("""(?<!\d)(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})(?!\d)""")
+            for (label in listOf(base.optString("short"), base.optString("name")).distinct()) {
+                val match = range.find(label) ?: continue
+                val start = parseClock(match.groupValues[1]) ?: continue
+                val end = parseClock(match.groupValues[2]) ?: continue
+                if (end > start) return start to end
+            }
+            return null
+        }
+        fun timeRange(period: String, bell: String, day: Int): Pair<LocalTime, LocalTime>? {
             val base = periods[period] ?: return null
             val override = bells[bell]?.optJSONObject("perioddata")?.optJSONObject(period)
-            val rawTime = override?.optJSONObject("daydata")?.optJSONObject(day.toString())?.optString(field)?.takeIf { it.isNotBlank() }
-                ?: override?.optString(field)?.takeIf { it.isNotBlank() }
-                ?: base.optJSONObject("daydata")?.optJSONObject(day.toString())?.optString(field)?.takeIf { it.isNotBlank() }
-                ?: base.optString(field)
-            return runCatching { LocalTime.parse(rawTime) }.getOrNull()
+
+            // A day-specific override is the most explicit source available.
+            objectRange(override?.optJSONObject("daydata")?.optJSONObject(day.toString()))?.let { return it }
+            objectRange(base.optJSONObject("daydata")?.optJSONObject(day.toString()))?.let { return it }
+
+            // Some EduPage exports contain stale/misaligned structured bell times while the period's
+            // user-visible label has the intended time range. Prefer an explicit valid label range
+            // before the generic structured values so we match what the published timetable says.
+            labelRange(base)?.let { return it }
+
+            return objectRange(override) ?: objectRange(base)
         }
         val cards = rows("cards").flatMap { card ->
             val lesson = lessons[card.getString("lessonid")] ?: error("Timetable has an unknown lesson reference.")
@@ -90,9 +119,11 @@ object EduPageParser {
             val splitGroups = groupIds.filter { groups[it]?.optBoolean("entireclass") != true }
             card.getString("days").mapIndexedNotNull { day, enabled ->
                 if (enabled != '1' || day > 6) null else {
-                    val start = time(period, bell, day, "starttime")
-                    val baseEnd = time(period, bell, day, "endtime")
-                    val extendedEnd = time(endPeriod, bell, day, "endtime")
+                    val baseRange = timeRange(period, bell, day)
+                    val endRange = timeRange(endPeriod, bell, day)
+                    val start = baseRange?.first
+                    val baseEnd = baseRange?.second
+                    val extendedEnd = endRange?.second
                     val baseMinutes = if (start != null && baseEnd != null && baseEnd > start) Duration.between(start, baseEnd).toMinutes() else 0
                     // Some schools publish long teaching blocks (for example 75 minutes) while lesson.durationperiods
                     // still reflects the editor's underlying grid. Extending those blocks creates phantom late endings.
