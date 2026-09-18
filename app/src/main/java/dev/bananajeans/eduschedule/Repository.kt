@@ -2,6 +2,7 @@ package dev.bananajeans.eduschedule
 
 import android.content.Context
 import android.util.AtomicFile
+import androidx.core.content.edit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -18,25 +19,25 @@ class Preferences(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     var host: String
         get() = prefs.getString("host", "kunst.edupage.org")!!
-        set(value) { prefs.edit().putString("host", normalizeHost(value)).remove("home").remove("hidden").apply() }
+        set(value) { prefs.edit { putString("host", normalizeHost(value)); remove("home"); remove("hidden") } }
     var home: String
         get() = prefs.getString("home", "")!!
-        set(value) { prefs.edit().putString("home", value).apply() }
+        set(value) { prefs.edit { putString("home", value) } }
     var hiddenGroups: Set<String>
         get() = prefs.getStringSet("hidden", emptySet())!!.toSet()
-        set(value) { prefs.edit().putStringSet("hidden", value.toSet()).apply() }
+        set(value) { prefs.edit { putStringSet("hidden", value.toSet()) } }
     var theme: String
         get() = prefs.getString("theme", "System")!!
-        set(value) { prefs.edit().putString("theme", value).apply() }
+        set(value) { prefs.edit { putString("theme", value) } }
     var dynamic: Boolean
         get() = prefs.getBoolean("dynamic", true)
-        set(value) { prefs.edit().putBoolean("dynamic", value).apply() }
+        set(value) { prefs.edit { putBoolean("dynamic", value) } }
     var notifications: Boolean
         get() = prefs.getBoolean("notifications", false)
-        set(value) { prefs.edit().putBoolean("notifications", value).apply() }
+        set(value) { prefs.edit { putBoolean("notifications", value) } }
     var zone: String
         get() = prefs.getString("zone", "Europe/Tallinn")!!
-        set(value) { ZoneId.of(value); prefs.edit().putString("zone", value).apply() }
+        set(value) { ZoneId.of(value); prefs.edit { putString("zone", value) } }
     companion object {
         fun normalizeHost(input: String): String {
             val value = input.trim().lowercase()

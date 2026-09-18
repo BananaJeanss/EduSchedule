@@ -11,6 +11,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.work.*
 import kotlinx.coroutines.CancellationException
 import java.security.MessageDigest
@@ -40,16 +41,16 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
             val key = "${preferences.host}:${preferences.home}"
             val previous = state.getString(key, null)
             if (previous != null && previous != signature) notify("Timetable updated", "Your saved class has a new timetable. Tap to check what changed.", 1)
-            state.edit().putString(key, signature).apply()
+            state.edit { putString(key, signature) }
             // Daily release checks share the opt-in background task. No install/download permission.
             if (System.currentTimeMillis() - state.getLong("updateCheck", 0) > TimeUnit.DAYS.toMillis(1)) {
                 try {
                     val release = Updates.check()
                     if (release != null && state.getString("notifiedRelease", "") != release.version) {
                         notify("EduSchedule ${release.version}", "An update is available. Open Settings to view the release.", 2)
-                        state.edit().putString("notifiedRelease", release.version).apply()
+                        state.edit { putString("notifiedRelease", release.version) }
                     }
-                    state.edit().putLong("updateCheck", System.currentTimeMillis()).apply()
+                    state.edit { putLong("updateCheck", System.currentTimeMillis()) }
                 } catch (e: CancellationException) { throw e } catch (_: Exception) { /* Timetable refresh still succeeded. */ }
             }
             Result.success()

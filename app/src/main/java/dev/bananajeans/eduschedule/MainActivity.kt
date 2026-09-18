@@ -23,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,7 +38,6 @@ import kotlinx.coroutines.withContext
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
-import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -218,6 +218,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 @Composable fun DayScreen(lessons: List<Lesson>, date: LocalDate, zone: String, revision: String, onLesson: (Lesson) -> Unit) {
+    val locale = LocalConfiguration.current.locales[0]
     var now by remember { mutableStateOf(ZonedDateTime.now(ZoneId.of(zone))) }
     LaunchedEffect(zone) { while (true) { now = ZonedDateTime.now(ZoneId.of(zone)); delay(30_000) } }
     val current = if (date == now.toLocalDate()) lessons.firstOrNull { it.start != null && it.end != null && now.toLocalTime() >= it.start && now.toLocalTime() < it.end } else null
@@ -227,7 +228,7 @@ class MainActivity : ComponentActivity() {
             val focus = current ?: next
             Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(when { current != null -> "HAPPENING NOW"; next != null -> "UP NEXT"; lessons.isEmpty() -> "CLEAR SCHEDULE"; date == now.toLocalDate() -> "ALL DONE"; else -> date.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale.getDefault()).uppercase() }, style = MaterialTheme.typography.labelMedium)
+                    Text(when { current != null -> "HAPPENING NOW"; next != null -> "UP NEXT"; lessons.isEmpty() -> "CLEAR SCHEDULE"; date == now.toLocalDate() -> "ALL DONE"; else -> date.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, locale).uppercase(locale) }, style = MaterialTheme.typography.labelMedium)
                     Text(focus?.subject ?: if (lessons.isEmpty()) "A little breathing room." else if (date == now.toLocalDate()) "That's your day." else "${lessons.size} lessons", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
                     Text(focus?.let { "${it.start}–${it.end}${if (it.roomNames.isNotBlank()) " · ${it.roomNames}" else ""}" } ?: if (lessons.isEmpty()) "No published lessons for this selection." else "${lessons.first().start ?: "?"}–${lessons.last().end ?: "?"}", style = MaterialTheme.typography.bodyMedium)
                 }
