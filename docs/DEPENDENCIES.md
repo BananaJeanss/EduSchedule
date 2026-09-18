@@ -30,9 +30,9 @@ AGP 9.4.1 currently brings several older transitive libraries on the Gradle plug
 
 - JDOM2 2.0.6.1
 - Apache HttpClient 4.5.14
-- Apache Commons Lang 3.18.0
-- jose4j 0.9.6
-- Bouncy Castle bcprov/bcpkix/bcutil 1.85
+- Apache Commons Lang 3.20.0
+- jose4j 0.9.7
+- Bouncy Castle bcprov/bcpkix/bcutil 1.86
 
 Remove these overrides once a stable AGP release resolves to equal-or-newer patched versions by default.
 
