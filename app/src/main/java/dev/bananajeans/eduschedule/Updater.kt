@@ -171,26 +171,32 @@ object UpdateInstaller {
     }
 
     @Suppress("DEPRECATION")
-    private fun archiveInfo(manager: PackageManager, apk: File): PackageInfo? =
-        if (Build.VERSION.SDK_INT >= 33) {
-            manager.getPackageArchiveInfo(
-                apk.absolutePath,
-                PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong())
-            )
+    private fun archiveInfo(manager: PackageManager, apk: File): PackageInfo? {
+        val flags = if (Build.VERSION.SDK_INT >= 28) {
+            PackageManager.GET_SIGNING_CERTIFICATES
         } else {
-            manager.getPackageArchiveInfo(apk.absolutePath, PackageManager.GET_SIGNING_CERTIFICATES)
+            PackageManager.GET_SIGNATURES
         }
+        return if (Build.VERSION.SDK_INT >= 33) {
+            manager.getPackageArchiveInfo(apk.absolutePath, PackageManager.PackageInfoFlags.of(flags.toLong()))
+        } else {
+            manager.getPackageArchiveInfo(apk.absolutePath, flags)
+        }
+    }
 
     @Suppress("DEPRECATION")
-    private fun installedInfo(manager: PackageManager, packageName: String): PackageInfo =
-        if (Build.VERSION.SDK_INT >= 33) {
-            manager.getPackageInfo(
-                packageName,
-                PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong())
-            )
+    private fun installedInfo(manager: PackageManager, packageName: String): PackageInfo {
+        val flags = if (Build.VERSION.SDK_INT >= 28) {
+            PackageManager.GET_SIGNING_CERTIFICATES
         } else {
-            manager.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+            PackageManager.GET_SIGNATURES
         }
+        return if (Build.VERSION.SDK_INT >= 33) {
+            manager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(flags.toLong()))
+        } else {
+            manager.getPackageInfo(packageName, flags)
+        }
+    }
 
     @Suppress("DEPRECATION")
     private fun signerDigests(info: PackageInfo): Set<String> {
