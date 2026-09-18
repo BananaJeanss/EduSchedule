@@ -145,7 +145,17 @@ class MainActivity : ComponentActivity() {
                 else if (timetable == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 else {
                     if (s.snapshot.offline) Surface(color = MaterialTheme.colorScheme.tertiaryContainer) {
-                        Text("Offline · saved ${s.snapshot.fetched.atZone(ZoneId.of(s.zone)).format(DateTimeFormatter.ofPattern("d MMM, HH:mm"))}", Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.labelMedium)
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Glyph("offline", "Using saved offline timetable")
+                            Text(
+                                "Offline · saved ${s.snapshot.fetched.atZone(ZoneId.of(s.zone)).format(DateTimeFormatter.ofPattern("d MMM, HH:mm"))}",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
                     }
                     when {
                         tab == "Browse" || s.selection == null -> BrowseScreen(timetable, s.selection, s.home, { vm.select(it); if (s.home.isBlank() && it.kind == ScheduleKind.CLASS) vm.home(it.id); tab = "Day" })
@@ -182,13 +192,44 @@ class MainActivity : ComponentActivity() {
         dismissButton = { TextButton(enabled = s.week.size == 7, onClick = { pendingExport = Exports.csv(vm.exportLessons()); export.launch("EduSchedule-${s.date}.csv"); showExport = false }) { Text("Spreadsheet (.csv)") } })
     detail?.let { dated ->
         val l = dated.lesson
+        val links = timetable?.linkedSchedules(l).orEmpty()
         ModalBottomSheet(onDismissRequest = { detail = null }) {
             Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(l.subject, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
                 Text("${dated.date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM"))} · ${l.start ?: "?"}–${l.end ?: "?"}", style = MaterialTheme.typography.titleMedium)
-                listOf("Room" to l.roomNames, "Teacher" to l.teacherNames, "Class" to l.classNames, "Group" to l.group).filter { it.second.isNotBlank() }.forEach { (label, value) ->
-                    Text("$label · $value", style = MaterialTheme.typography.bodyLarge)
+
+                listOf(
+                    ScheduleKind.ROOM to l.roomNames,
+                    ScheduleKind.TEACHER to l.teacherNames,
+                    ScheduleKind.CLASS to l.classNames
+                ).forEach { (kind, fallback) ->
+                    val label = when (kind) {
+                        ScheduleKind.ROOM -> "Room"
+                        ScheduleKind.TEACHER -> "Teacher"
+                        ScheduleKind.CLASS -> "Class"
+                    }
+                    val entityLinks = links.filter { it.kind == kind }
+                    if (entityLinks.isNotEmpty()) {
+                        entityLinks.forEach { link ->
+                            ListItem(
+                                overlineContent = { Text(label) },
+                                headlineContent = { Text(link.entity.name, fontWeight = FontWeight.Medium) },
+                                trailingContent = { Glyph("next", "Open $label schedule") },
+                                modifier = Modifier.fillMaxWidth().clickable {
+                                    detail = null
+                                    vm.date(dated.date)
+                                    vm.select(Selection(link.kind, link.entity.id))
+                                    tab = "Day"
+                                },
+                                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                            )
+                        }
+                    } else if (fallback.isNotBlank()) {
+                        Text("$label · $fallback", style = MaterialTheme.typography.bodyLarge)
+                    }
                 }
+                if (l.group.isNotBlank()) Text("Group · ${l.group}", style = MaterialTheme.typography.bodyLarge)
+
                 Button(enabled = l.start != null && l.end != null, modifier = Modifier.fillMaxWidth(), onClick = {
                     val intent = Intent(Intent.ACTION_INSERT).setData(CalendarContract.Events.CONTENT_URI)
                         .putExtra(CalendarContract.Events.TITLE, l.subject)
@@ -436,7 +477,14 @@ class MainActivity : ComponentActivity() {
             val date = monday.plusDays(offset); val snapshot = s.week[date]
             val blocks = snapshot?.timetable?.lessonBlocksOn(date,s.selection!!,s.hidden,s.cycleWeek).orEmpty()
             if (offset < 5 || blocks.isNotEmpty()) Column(Modifier.width(272.dp)) {
-                Text(date.format(DateTimeFormatter.ofPattern("EEEE · d")), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 14.dp), fontWeight = FontWeight.SemiBold)
+                Row(
+                    Modifier.padding(vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(date.format(DateTimeFormatter.ofPattern("EEEE · d")), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    if (snapshot?.offline == true) Glyph("offline", "Using saved offline timetable")
+                }
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
                     if (snapshot == null) item { Text(if (s.loading) "Loading…" else "Not available offline. Refresh to retry.") }
                     else if (blocks.isEmpty()) item { Text("No published lessons", color = MaterialTheme.colorScheme.onSurfaceVariant) }
