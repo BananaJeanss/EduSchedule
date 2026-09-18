@@ -35,3 +35,8 @@ AGP 9.4.1 currently brings several older transitive libraries on the Gradle plug
 - Bouncy Castle bcprov/bcpkix/bcutil 1.85
 
 Remove these overrides once a stable AGP release resolves to equal-or-newer patched versions by default.
+
+
+## CodeQL Kotlin compatibility
+
+Production, normal CI, and release builds use patched Kotlin 2.4.20. GitHub's public CodeQL 2.27.0 Java/Kotlin extractor currently rejects Kotlin 2.4.20 as too recent. Until GitHub ships a compatible extractor, the CodeQL job rewrites the Kotlin plugin version to 2.4.10 **only inside its ephemeral analysis workspace**, with Gradle build/configuration caching disabled and no build artifact published from that job. This preserves Kotlin source analysis without downgrading the project or release toolchain. Remove the compatibility rewrite as soon as the hosted extractor accepts 2.4.20.
