@@ -44,11 +44,16 @@ import java.time.temporal.TemporalAdjusters
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState); enableEdgeToEdge()
+        val openSettings = intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)
         setContent {
             val vm: ScheduleViewModel = viewModel()
             val state by vm.state.collectAsStateWithLifecycle()
-            EduTheme(state.theme, state.dynamic) { ScheduleApp(vm, state) }
+            EduTheme(state.theme, state.dynamic) { ScheduleApp(vm, state, openSettings) }
         }
+    }
+
+    companion object {
+        const val EXTRA_OPEN_SETTINGS = "open_settings"
     }
 }
 @Composable fun EduTheme(theme: String = "System", dynamic: Boolean = true, content: @Composable () -> Unit) {
@@ -62,13 +67,13 @@ class MainActivity : ComponentActivity() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable fun ScheduleApp(vm: ScheduleViewModel, s: ScheduleState) {
+@Composable fun ScheduleApp(vm: ScheduleViewModel, s: ScheduleState, openSettingsInitially: Boolean = false) {
     if (s.host.isBlank()) { SetupScreen(vm, s.zone); return }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var tab by rememberSaveable { mutableStateOf("Day") }
     var menu by remember { mutableStateOf(false) }
-    var settings by rememberSaveable { mutableStateOf(false) }
+    var settings by rememberSaveable { mutableStateOf(openSettingsInitially) }
     var showExport by remember { mutableStateOf(false) }
     var showDate by remember { mutableStateOf(false) }
     var detail by remember { mutableStateOf<DatedLesson?>(null) }
