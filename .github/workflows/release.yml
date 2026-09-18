@@ -36,7 +36,7 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
           SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ vars.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_ALIAS: eduschedule
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
           set -euo pipefail
@@ -53,7 +53,7 @@ jobs:
       - name: Test and build signed APK and bundle
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ vars.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_ALIAS: eduschedule
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: ./gradlew testDebugUnitTest lintRelease assembleRelease bundleRelease -PversionName="$RELEASE_VERSION" -PversionCode="$GITHUB_RUN_NUMBER"
       - name: Verify signature and checksum
