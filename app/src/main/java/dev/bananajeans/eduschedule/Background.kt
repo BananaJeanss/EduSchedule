@@ -100,7 +100,7 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
         }
     }
 
-    private fun notify(title: String, text: String, id: Int) {
+    private fun notify(title: String, text: String, id: Int, openUpdates: Boolean = false) {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         val channel = "timetable_changes"
@@ -108,10 +108,12 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
             .createNotificationChannel(
                 NotificationChannel(channel, "Timetable and app updates", NotificationManager.IMPORTANCE_DEFAULT)
             )
+        val intent = Intent(applicationContext, MainActivity::class.java)
+            .putExtra(MainActivity.EXTRA_OPEN_SETTINGS, openUpdates)
         val pending = PendingIntent.getActivity(
             applicationContext,
-            0,
-            Intent(applicationContext, MainActivity::class.java),
+            id,
+            intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val notification = NotificationCompat.Builder(applicationContext, channel)
