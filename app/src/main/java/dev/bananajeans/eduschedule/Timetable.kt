@@ -7,6 +7,7 @@ import java.time.*
 data class Entity(val id: String, val name: String)
 enum class ScheduleKind(val table: String, val label: String) { CLASS("classes", "Classes"), TEACHER("teachers", "Teachers"), ROOM("classrooms", "Rooms") }
 data class Selection(val kind: ScheduleKind, val id: String)
+data class ScheduleLink(val kind: ScheduleKind, val entity: Entity)
 data class Revision(val id: String, val name: String, val from: LocalDate)
 data class Lesson(
     val id: String, val subject: String, val day: Int, val period: String,
@@ -28,6 +29,18 @@ data class Timetable(
             (it.groupIds.isEmpty() || it.groupIds.any { id -> id !in hiddenGroups }) &&
             (it.weeks.isEmpty() || it.weeks.getOrNull(week) == '1') }
             .sortedWith(compareBy<Lesson> { it.start ?: LocalTime.MAX }.thenBy { it.subject }.thenBy { it.id })
+
+    fun linkedSchedules(lesson: Lesson): List<ScheduleLink> {
+        val ids = mapOf(
+            ScheduleKind.CLASS to lesson.classes,
+            ScheduleKind.TEACHER to lesson.teachers,
+            ScheduleKind.ROOM to lesson.rooms
+        )
+        return listOf(ScheduleKind.ROOM, ScheduleKind.TEACHER, ScheduleKind.CLASS).flatMap { kind ->
+            val byId = entities[kind].orEmpty().associateBy(Entity::id)
+            ids[kind].orEmpty().distinct().mapNotNull { id -> byId[id]?.let { ScheduleLink(kind, it) } }
+        }
+    }
 }
 
 object EduPageParser {
