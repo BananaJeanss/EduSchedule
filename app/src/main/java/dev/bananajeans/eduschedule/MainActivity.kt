@@ -346,7 +346,7 @@ class MainActivity : ComponentActivity() {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
         Surface(shape = RoundedCornerShape(999.dp), color = MaterialTheme.colorScheme.primaryContainer) {
-            Text("$time now", Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelMedium)
+            Text("${time.format(DateTimeFormatter.ofPattern("HH:mm"))} now", Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelMedium)
         }
         HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
     }
