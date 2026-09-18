@@ -1,0 +1,30 @@
+name: Timetable compatibility issue
+description: Report a public EduPage timetable that parses incorrectly
+title: "[Compatibility]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not post your school URL, student names, teacher names, credentials, or a raw private/authenticated response. Prefer a minimal sanitized schema sample.
+  - type: textarea
+    id: symptom
+    attributes:
+      label: Incorrect behavior
+      description: Explain what EduSchedule shows and what the public timetable shows instead.
+    validations:
+      required: true
+  - type: textarea
+    id: sanitized
+    attributes:
+      label: Sanitized technical detail
+      description: If useful, include only the minimal anonymized fields needed to reproduce the parser issue.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: The source timetable is public and does not require a login.
+          required: true
+        - label: I removed personal data and the school hostname from anything posted publicly.
+          required: true

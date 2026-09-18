@@ -23,11 +23,21 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
-      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
       - run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
+      - name: Prepare CodeQL Kotlin compatibility build
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The project and all shipping builds stay on patched Kotlin 2.4.20.
+          # CodeQL bundle 2.27.0 currently rejects 2.4.20, so only this ephemeral
+          # analysis workspace compiles with 2.4.10. Gradle caches are disabled
+          # below, and no artifact from this compatibility build is published.
+          grep -qx 'kotlin = "2.4.20"' gradle/libs.versions.toml
+          sed -i 's/^kotlin = "2\.4\.20"$/kotlin = "2.4.10"/' gradle/libs.versions.toml
       - uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4
         with:
           languages: java-kotlin
           build-mode: manual
-      - run: ./gradlew clean assembleDebug --no-build-cache --no-configuration-cache --no-daemon -Pkotlin.compiler.execution.strategy=in-process
+      - name: Compile all Kotlin source sets for analysis
+        run: ./gradlew clean assembleDebug testDebugUnitTest assembleDebugAndroidTest --no-build-cache --no-configuration-cache --no-daemon -Pkotlin.compiler.execution.strategy=in-process
       - uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4
