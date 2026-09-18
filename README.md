@@ -10,7 +10,7 @@ A native Android reader for public aSc / EduPage timetables. Built around the ne
 - Date-aware timetable revisions, real bell times, multiple-period lessons, and explicit week-cycle selection when a school publishes multiple cycles.
 - Validated atomic offline cache plus a bounded in-memory day cache for instant back/forward navigation; current week prefetched; stale/offline state and fetch time shown.
 - Add a lesson through Android's calendar editor (including Google Calendar); export the displayed week as RFC 5545 `.ics` or spreadsheet `.csv` through the system file picker.
-- Opt-in class-start reminders with Mute 1h / Mute today actions, plus timetable-change and app-release notifications. Manual GitHub release checking. No silent APK installation.
+- Opt-in class-start reminders with Mute 1h / Mute today actions, plus timetable-change and app-release notifications. In-app updates download the signed GitHub APK, verify its checksum/package/version/signing certificate, then hand it to Android for the required install confirmation.
 - Debug APK artifacts, release signing workflow, JVM tests, emulator UI tests, Android lint, CodeQL and Dependabot.
 
 First launch asks for a public `*.edupage.org` school address and time zone; no school is built in or contacted before setup. Android 8+ (API 26).
