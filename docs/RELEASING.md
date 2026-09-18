@@ -1,0 +1,32 @@
+# Releases and signing
+
+## One-time owner setup
+
+Create a durable signing key outside the repository and back it up securely. Android requires the same key for future updates. Do not use the debug key, generate a fresh key per build, or paste passwords into issues.
+
+```sh
+keytool -genkeypair -v -keystore eduschedule-release.jks -alias eduschedule -keyalg RSA -keysize 4096 -validity 10000
+```
+
+In GitHub's `release` environment (or repository settings), configure:
+
+| Type | Name | Value |
+| --- | --- | --- |
+| Secret | `SIGNING_KEYSTORE_BASE64` | Base64 of the JKS, a single line |
+| Secret | `SIGNING_STORE_PASSWORD` | Keystore password |
+| Secret | `SIGNING_KEY_PASSWORD` | Private key password |
+| Variable | `SIGNING_KEY_ALIAS` | `eduschedule`, or your chosen alias |
+
+These settings must be supplied by the owner; no signing secret is created or committed by this project. Restrict the `release` environment to trusted branches/tags. `Signed release` fails before building if any signing input is missing.
+
+## Publish
+
+After Android CI, emulator tests and CodeQL pass, run `Signed release` manually with a stable semantic version, or push a `vX.Y.Z` tag. The workflow derives an increasing Android version code from its run number, runs unit tests and release lint, builds APK/AAB, verifies the APK certificate, creates checksums and GitHub provenance attestations, and publishes a GitHub release. Signing material is removed even if a step fails. Never reuse a published version tag or move it to a different commit.
+
+The app reads GitHub's latest stable release endpoint and compares numeric semantic versions. It opens the trusted repository release page after a user action; Android performs install/update signature verification. There is no automatic APK download or silent installer.
+
+Debug builds have a separate application ID and are available from Android CI artifacts. Normal CI also assembles a minified unsigned release so release-only issues surface before signing credentials are supplied.
+
+## Release review
+
+Check real-device light/dark/dynamic colors, gesture and three-button navigation, rotation and large font sizes. Verify school/class selection, split groups, week/date transitions, offline restart, calendar insertion, .ics import in Google Calendar, denied notifications and app update links. Check the regular-timetable limitation text. An APK that compiles is not proof these device behaviors passed.
