@@ -66,6 +66,15 @@ class TimetableTest {
         assertEquals(1,timetable().lessonsOn(revision.from,Selection(ScheduleKind.TEACHER,"-1")).size)
         assertEquals(1,timetable().lessonsOn(revision.from,Selection(ScheduleKind.ROOM,"-8")).size)
     }
+    @Test fun lessonDetailLinksResolveExactSchedules() {
+        val t = timetable()
+        val lesson = t.lessons.first { it.day == 0 && it.period == "4" }
+        val links = t.linkedSchedules(lesson)
+        assertTrue(links.any { it.kind == ScheduleKind.CLASS && it.entity.id == "*1" })
+        assertTrue(links.any { it.kind == ScheduleKind.TEACHER && it.entity.id == "-1" })
+        assertTrue(links.any { it.kind == ScheduleKind.ROOM && it.entity.id == "-8" })
+        assertEquals(links.size, links.distinctBy { it.kind to it.entity.id }.size)
+    }
     @Test fun invalidTimesRemainUnknown() { assertNull(timetable().lessons.first { it.period == "7" }.start) }
     @Test(expected = IllegalArgumentException::class) fun rejectsErrorEnvelope() { EduPageParser.parse("""{"error":"login required"}""",revision) }
     @Test fun hostValidationRejectsRedirectAndCredentialTricks() {
