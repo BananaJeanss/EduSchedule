@@ -8,7 +8,7 @@ class ExportsTest {
     @Test fun writesEscapedUtcEventsWithStableUids() {
         val events = listOf(DatedLesson(date,lesson()))
         val first = Exports.ics("school.edupage.org","Class",events,ZoneId.of("Europe/Tallinn"),Instant.EPOCH)
-        assertTrue(first.contains("DTSTART:20260914T102000Z"))
+        assertTrue(first.contains("DTSTART:20260914T100000Z"))
         assertTrue(first.contains("SUMMARY:Art\\, design\\; studio"))
         assertTrue(first.endsWith("END:VCALENDAR\r\n"))
         val second = Exports.ics("school.edupage.org","Class",events,ZoneId.of("Europe/Tallinn"),Instant.now())

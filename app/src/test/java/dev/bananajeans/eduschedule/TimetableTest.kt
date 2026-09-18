@@ -17,22 +17,21 @@ class TimetableTest {
         val raw = """{"r":{"regular":{"timetables":[{"tt_num":"10","text":"ten","datefrom":"2026-09-01","hidden":false},{"tt_num":"11","text":"hidden","datefrom":"2026-09-02","hidden":true},{"tt_num":"9","text":"nine","datefrom":"2026-09-01"}]}}}"""
         assertEquals(listOf("9","10"),EduPageParser.revisions(raw).map { it.id })
     }
-    @Test fun honorsBellOverridesAndDoesNotExtendAlreadyLongBlocks() {
-        val t = timetable(); val monday = t.lessons.first { it.day == 0 && it.period == "4" }; val tuesday = t.lessons.first { it.day == 1 }
-        assertEquals(LocalTime.of(13,20),monday.start)
-        assertEquals(LocalTime.of(14,35),monday.end)
-        assertEquals(LocalTime.of(13,25),tuesday.start)
-        assertEquals(LocalTime.of(14,40),tuesday.end)
-        assertEquals("Teacher One",monday.teacherNames)
+    @Test fun prefersPublishedLabelRangeOverConflictingGenericTimes() {
+        val monday = timetable().lessons.first { it.day == 0 && it.period == "4" }
+        assertEquals(LocalTime.of(13,0), monday.start)
+        assertEquals(LocalTime.of(14,40), monday.end)
+        assertEquals("Teacher One", monday.teacherNames)
     }
-    @Test fun stillExtendsConventionalShortDoublePeriods() {
-        val raw = javaClass.getResource("/timetable.json")!!.readText()
-            .replace("\"starttime\":\"13:20\",\"endtime\":\"14:35\"", "\"starttime\":\"13:20\",\"endtime\":\"14:05\"")
-            .replace("\"starttime\":\"13:25\",\"endtime\":\"14:40\"", "\"starttime\":\"13:25\",\"endtime\":\"14:10\"")
-            .replace("\"starttime\":\"14:45\",\"endtime\":\"16:00\"", "\"starttime\":\"14:15\",\"endtime\":\"15:00\"")
-        val monday = EduPageParser.parse(raw, revision).lessons.first { it.day == 0 && it.period == "4" }
-        assertEquals(LocalTime.of(13,20), monday.start)
-        assertEquals(LocalTime.of(15,0), monday.end)
+    @Test fun daySpecificOverrideStillWinsOverLabelRange() {
+        val tuesday = timetable().lessons.first { it.day == 1 && it.period == "4" }
+        assertEquals(LocalTime.of(13,25), tuesday.start)
+        assertEquals(LocalTime.of(14,40), tuesday.end)
+    }
+    @Test fun singlePeriodUsesItsExplicitPublishedRange() {
+        val lesson = timetable().lessons.first { it.day == 2 && it.period == "5" }
+        assertEquals(LocalTime.of(13,55), lesson.start)
+        assertEquals(LocalTime.of(14,40), lesson.end)
     }
     @Test fun filtersGroupsAndCycleWithoutHidingWholeClass() {
         val t = timetable(); val selection = Selection(ScheduleKind.CLASS,"*1")

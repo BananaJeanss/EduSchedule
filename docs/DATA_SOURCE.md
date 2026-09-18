@@ -20,7 +20,7 @@ Timetable data is under `dbiAccessorRes.tables`. Cards are joined to lessons, th
 
 ## Times
 
-Use structured `starttime` / `endtime` values rather than localized labels. Apply bell and day-specific overrides. Some schools publish long teaching blocks while `durationperiods` still reflects the timetable editor's smaller underlying grid. Extending an already-long block can create phantom late endings, so EduSchedule only extends multi-period lessons when the visible base period is 60 minutes or shorter. Missing or non-increasing times remain unknown and are not exported to calendars.
+Resolve times in this order: day-specific overrides first; then an explicit valid `H:mm-H:mm` range embedded in the published period `short`/`name`; then generic bell/base `starttime` / `endtime`. This is deliberate because some EduPage exports contain stale or misaligned generic structured times while the user-visible period label carries the intended published range. Some schools also publish long teaching blocks while `durationperiods` still reflects the editor's smaller underlying grid. Extending an already-long block can create phantom late endings, so EduSchedule only extends multi-period lessons when the visible base period is 60 minutes or shorter. Missing or non-increasing times remain unknown and are not exported to calendars.
 
 ## Groups
 
