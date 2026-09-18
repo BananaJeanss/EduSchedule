@@ -38,7 +38,11 @@ object EduPageParser {
     }
     fun revisions(raw: String): List<Revision> = result(raw).getJSONObject("regular").getJSONArray("timetables").objects()
         .filter { !it.optBoolean("hidden") }
-        .map { Revision(it.getString("tt_num"), it.getString("text"), LocalDate.parse(it.getString("datefrom"))) }
+        .map {
+            val id = it.getString("tt_num")
+            require(Regex("[0-9]{1,10}").matches(id)) { "Unrecognized timetable identifier." }
+            Revision(id, it.getString("text"), LocalDate.parse(it.getString("datefrom")))
+        }
         .sortedWith(compareBy<Revision> { it.from }.thenBy { it.id.toIntOrNull() ?: 0 })
 
     fun revisionFor(revisions: List<Revision>, date: LocalDate): Revision? = revisions.lastOrNull { !it.from.isAfter(date) }
