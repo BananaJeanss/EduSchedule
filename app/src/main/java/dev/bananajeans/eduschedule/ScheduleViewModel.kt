@@ -27,6 +27,8 @@ data class ScheduleState(
     val cycleWeek: Int = 0,
     val release: AppRelease? = null,
     val updateChecking: Boolean = false,
+    val updateDownloading: Boolean = false,
+    val updateProgress: Int? = null,
     val home: String = "",
     val host: String = "",
     val notifications: Boolean = false,
@@ -59,6 +61,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
     init {
         Background.configure(app, preferences.notifications)
         if (preferences.host.isNotBlank()) refresh()
+        checkUpdates(showResult = false)
     }
 
     fun date(value: LocalDate) {
@@ -234,22 +237,58 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    fun updates() = viewModelScope.launch {
+    fun updates() {
+        checkUpdates(showResult = true)
+    }
+
+    private fun checkUpdates(showResult: Boolean) = viewModelScope.launch {
         mutable.update { it.copy(updateChecking = true) }
         try {
             val release = Updates.check()
             mutable.update {
                 it.copy(
                     release = release,
-                    message = if (release == null) "You're up to date." else "${release.version} is available."
+                    message = if (!showResult) it.message
+                    else if (release == null) "You're up to date."
+                    else "${release.version} is available."
                 )
             }
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
-            message("No release could be checked. Try again later.")
+            if (showResult) message("No release could be checked. Try again later.")
         } finally {
             mutable.update { it.copy(updateChecking = false) }
+        }
+    }
+
+    fun installUpdate() {
+        val release = mutable.value.release ?: return
+        if (mutable.value.updateDownloading) return
+        viewModelScope.launch {
+            mutable.update { it.copy(updateDownloading = true, updateProgress = 0) }
+            try {
+                UpdateInstaller.downloadVerifyAndInstall(getApplication(), release) { progress ->
+                    mutable.update { state -> state.copy(updateProgress = progress) }
+                }
+                mutable.update {
+                    it.copy(
+                        updateDownloading = false,
+                        updateProgress = null,
+                        message = "Update verified. Confirm installation with Android."
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutable.update {
+                    it.copy(
+                        updateDownloading = false,
+                        updateProgress = null,
+                        message = e.message ?: "Could not prepare the update."
+                    )
+                }
+            }
         }
     }
 
