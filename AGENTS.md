@@ -27,3 +27,7 @@ Use pinned latest stable versions verified against official registries. Compose 
 
 ## Documentation
 Update README, docs/ARCHITECTURE.md, docs/DATA_SOURCE.md and docs/RELEASING.md when behavior changes. Record actual test results separately from checks that are only configured. This repository is the source of truth; use small reviewable commits and don't overwrite others' work.
+
+## UI changes
+
+Follow [`DESIGN.md`](DESIGN.md) for Material 3 components, Material Symbols, spacing, navigation, state handling, copy, and accessibility standards.

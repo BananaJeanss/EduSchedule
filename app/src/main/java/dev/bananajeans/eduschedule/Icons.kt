@@ -1,51 +1,34 @@
 package dev.bananajeans.eduschedule
 
-import androidx.compose.foundation.Canvas
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 
-// Small original line icons. No obsolete material-icons-extended dependency.
-@Composable fun Glyph(name: String, description: String? = null) {
-    val color = LocalContentColor.current
-    Canvas(Modifier.size(24.dp).semantics { if (description != null) contentDescription = description }) {
-        val scale = size.width / 24f
-        fun line(x: Float, y: Float, x2: Float, y2: Float) = drawLine(color, Offset(x * scale,y * scale),Offset(x2 * scale,y2 * scale), 1.8f * scale, StrokeCap.Round)
-        fun box(x: Float,y: Float,w: Float,h: Float) = drawRect(color,Offset(x * scale,y * scale),Size(w * scale,h * scale),style=Stroke(1.8f * scale))
-        when(name) {
-            "back" -> { line(15f,5f,8f,12f); line(8f,12f,15f,19f) }
-            "next" -> { line(9f,5f,16f,12f); line(16f,12f,9f,19f) }
-            "more" -> listOf(5f,12f,19f).forEach { drawCircle(color,1.7f * scale,Offset(12f * scale,it * scale)) }
-            "day" -> { box(4f,4f,16f,16f); line(4f,9f,20f,9f); line(8f,13f,16f,13f); line(8f,17f,13f,17f) }
-            "week" -> { box(3f,5f,18f,15f); line(3f,10f,21f,10f); line(9f,10f,9f,20f); line(15f,10f,15f,20f) }
-            "browse" -> { drawCircle(color,6f * scale,Offset(10f * scale,10f * scale),style=Stroke(1.8f * scale)); line(15f,15f,21f,21f) }
-            "refresh" -> { drawArc(color,45f,285f,false,Offset(4f * scale,4f * scale),Size(16f * scale,16f * scale),style=Stroke(1.8f * scale)); line(20f,4f,20f,10f); line(20f,10f,14f,10f) }
-            "home" -> { line(3f,11f,12f,3f); line(12f,3f,21f,11f); line(6f,9f,6f,21f); line(18f,9f,18f,21f); line(6f,21f,18f,21f) }
-            "check" -> { line(4f,12f,10f,18f); line(10f,18f,20f,6f) }
-            "offline" -> {
-                val cloud = Path().apply {
-                    moveTo(6f * scale, 18f * scale)
-                    cubicTo(3.8f * scale, 18f * scale, 2.5f * scale, 16.4f * scale, 2.5f * scale, 14.3f * scale)
-                    cubicTo(2.5f * scale, 12.1f * scale, 4.1f * scale, 10.3f * scale, 6.3f * scale, 10f * scale)
-                    cubicTo(7f * scale, 7.1f * scale, 9.2f * scale, 5.2f * scale, 12.1f * scale, 5.2f * scale)
-                    cubicTo(15.4f * scale, 5.2f * scale, 18f * scale, 7.7f * scale, 18.4f * scale, 10.9f * scale)
-                    cubicTo(20.3f * scale, 11.2f * scale, 21.5f * scale, 12.8f * scale, 21.5f * scale, 14.6f * scale)
-                    cubicTo(21.5f * scale, 16.5f * scale, 20f * scale, 18f * scale, 18f * scale, 18f * scale)
-                    lineTo(6f * scale, 18f * scale)
-                }
-                drawPath(cloud, color, style = Stroke(1.8f * scale))
-                line(4f,4f,20f,20f)
-            }
-            else -> { box(4f,4f,16f,16f); line(8f,9f,16f,9f); line(8f,15f,16f,15f) }
-        }
-    }
+// Official Material Symbols Rounded vector assets are vendored in res/drawable.
+// Keep this mapping explicit so every icon used by the app is reviewable.
+@DrawableRes
+private fun glyphResource(name: String): Int = when (name) {
+    "back" -> R.drawable.ic_arrow_back_24
+    "next" -> R.drawable.ic_chevron_right_24
+    "more" -> R.drawable.ic_more_vert_24
+    "day" -> R.drawable.ic_calendar_view_day_24
+    "week" -> R.drawable.ic_calendar_view_week_24
+    "browse" -> R.drawable.ic_search_24
+    "refresh" -> R.drawable.ic_refresh_24
+    "check" -> R.drawable.ic_check_24
+    "offline" -> R.drawable.ic_cloud_off_24
+    else -> error("Unknown Material Symbol: $name")
+}
+
+@Composable
+fun Glyph(name: String, description: String? = null) {
+    Icon(
+        painter = painterResource(glyphResource(name)),
+        contentDescription = description,
+        modifier = Modifier.size(24.dp)
+    )
 }
