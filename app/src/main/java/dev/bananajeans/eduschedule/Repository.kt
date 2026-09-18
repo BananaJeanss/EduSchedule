@@ -10,7 +10,8 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
-import java.net.HttpURLConnection
+import java.security.MessageDigest
+import javax.net.ssl.HttpsURLConnection
 import java.net.URI
 import java.time.*
 
@@ -55,8 +56,13 @@ class Preferences(context: Context) {
     }
 }
 object Http {
-    fun request(url: String, body: String? = null): String {
-        val connection = URI(url).toURL().openConnection() as HttpURLConnection
+    fun request(uri: URI, body: String? = null): String {
+        val host = uri.host?.lowercase().orEmpty()
+        require(uri.scheme == "https" && uri.userInfo == null && uri.port == -1 &&
+            (host == "api.github.com" || Preferences.isEduPageHost(host))) {
+            "Refusing an unexpected network destination."
+        }
+        val connection = uri.toURL().openConnection() as HttpsURLConnection
         connection.connectTimeout = 15_000; connection.readTimeout = 25_000
         connection.instanceFollowRedirects = false
         connection.setRequestProperty("User-Agent", "EduSchedule/${BuildConfig.VERSION_NAME} (public timetable reader)")
@@ -82,7 +88,7 @@ object Http {
 }
 class Repository(context: Context) {
     private val directory = File(context.filesDir, "timetables").apply { mkdirs() }
-    private fun file(host: String, key: String) = File(directory, "$host-$key.json")
+    private fun file(host: String, key: String) = File(directory, cacheFileName(host, key))
     private fun cached(host: String, key: String): JSONObject? = runCatching {
         JSONObject(AtomicFile(file(host, key)).openRead().bufferedReader().use { it.readText() })
     }.getOrNull()
@@ -92,9 +98,18 @@ class Repository(context: Context) {
         catch (e: Exception) { atomic.failWrite(out); throw e }
         directory.listFiles()?.filter { it.extension == "json" }?.sortedByDescending { it.lastModified() }?.drop(24)?.forEach { it.delete() }
     }
-    private fun rpc(host: String, module: String, function: String, argument: Any): String = Http.request(
-        "https://$host/timetable/server/$module.js?__func=$function",
-        JSONObject().put("__args", JSONArray().put(JSONObject.NULL).put(argument)).put("__gsh", "00000000").toString())
+    private fun rpcBody(argument: Any): String =
+        JSONObject().put("__args", JSONArray().put(JSONObject.NULL).put(argument)).put("__gsh", "00000000").toString()
+
+    private fun viewerRpc(host: String, schoolYear: Int): String = Http.request(
+        URI("https", null, host, -1, "/timetable/server/ttviewer.js", "__func=getTTViewerData", null),
+        rpcBody(schoolYear)
+    )
+
+    private fun regularRpc(host: String, revisionId: String): String = Http.request(
+        URI("https", null, host, -1, "/timetable/server/regulartt.js", "__func=regularttGetData", null),
+        rpcBody(revisionId)
+    )
     suspend fun load(hostInput: String, date: LocalDate, force: Boolean = false): Snapshot = withContext(Dispatchers.IO) {
         mutex.withLock {
             val host = Preferences.normalizeHost(hostInput)
@@ -102,7 +117,7 @@ class Repository(context: Context) {
             var index = cached(host, "index")
             if (force || index == null || Duration.between(Instant.parse(index.getString("fetched")), Instant.now()).toMinutes() >= 30) {
                 try {
-                    val raw = rpc(host, "ttviewer", "getTTViewerData", if (date.monthValue >= 8) date.year else date.year - 1)
+                    val raw = viewerRpc(host, if (date.monthValue >= 8) date.year else date.year - 1)
                     require(EduPageParser.revisions(raw).isNotEmpty()) { "No public timetable is available." }
                     save(host, "index", raw); index = cached(host, "index")
                 } catch (e: Exception) { if (index == null) throw e; offline = true }
@@ -112,7 +127,7 @@ class Repository(context: Context) {
             var data = cached(host, revision.id)
             if (force || data == null || Duration.between(Instant.parse(data.getString("fetched")), Instant.now()).toHours() >= 6) {
                 try {
-                    val raw = rpc(host, "regulartt", "regularttGetData", revision.id)
+                    val raw = regularRpc(host, revision.id)
                     EduPageParser.parse(raw, revision) // Validate before replacing a working snapshot.
                     save(host, revision.id, raw); data = cached(host, revision.id)
                 } catch (e: Exception) { if (data == null) throw e; offline = true }
@@ -122,7 +137,16 @@ class Repository(context: Context) {
                 if (offline) "Offline · showing saved timetable" else null)
         }
     }
-    companion object { private val mutex = Mutex() }
+    companion object {
+        private val mutex = Mutex()
+
+        internal fun cacheFileName(host: String, key: String): String {
+            val digest = MessageDigest.getInstance("SHA-256")
+                .digest("$host\u0000$key".toByteArray(Charsets.UTF_8))
+                .joinToString("") { "%02x".format(it) }
+            return "$digest.json"
+        }
+    }
 }
 
 data class AppRelease(val version: String, val url: String)
@@ -134,10 +158,10 @@ object Updates {
         return a.zip(b).firstOrNull { it.first != it.second }?.let { it.first > it.second } ?: false
     }
     suspend fun check(): AppRelease? = withContext(Dispatchers.IO) {
-        val raw = JSONObject(Http.request("https://api.github.com/repos/$REPOSITORY/releases/latest"))
+        val raw = JSONObject(Http.request(URI("https://api.github.com/repos/$REPOSITORY/releases/latest")))
         val tag = raw.getString("tag_name")
-        val url = raw.getString("html_url")
-        require(url.startsWith("https://github.com/$REPOSITORY/releases/tag/")) { "Unexpected release destination." }
-        if (!raw.optBoolean("draft") && !raw.optBoolean("prerelease") && isNewer(tag, BuildConfig.VERSION_NAME)) AppRelease(tag, url) else null
+        if (!raw.optBoolean("draft") && !raw.optBoolean("prerelease") && version(tag) != null && isNewer(tag, BuildConfig.VERSION_NAME)) {
+            AppRelease(tag, "https://github.com/$REPOSITORY/releases/tag/$tag")
+        } else null
     }
 }

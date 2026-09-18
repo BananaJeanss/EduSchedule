@@ -35,6 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.net.URI
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
@@ -83,7 +84,21 @@ class MainActivity : ComponentActivity() {
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         vm.notifications(granted); if (!granted) vm.message("Notifications are off. You can enable them in Android settings.")
     }
-    fun open(url: String) { try { context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri())) } catch (_: Exception) { vm.message("No app can open this link.") } }
+    fun open(url: String) {
+        try {
+            val parsed = URI(url)
+            val host = parsed.host?.lowercase().orEmpty()
+            require(parsed.scheme == "https" && parsed.userInfo == null && parsed.port == -1 &&
+                (host == "github.com" || Preferences.isEduPageHost(host))) {
+                "Unexpected link destination."
+            }
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, url.toUri()).addCategory(Intent.CATEGORY_BROWSABLE)
+            )
+        } catch (_: Exception) {
+            vm.message("No app can open this link.")
+        }
+    }
     LaunchedEffect(s.message) { s.message?.let { snack.showSnackbar(it); vm.message(null) } }
     BackHandler(settings || tab != "Day") { if (settings) settings = false else tab = "Day" }
     val timetable = s.snapshot?.timetable

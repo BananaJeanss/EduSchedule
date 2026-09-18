@@ -55,6 +55,13 @@ class TimetableTest {
         assertEquals("Group 1", lesson.group)
         assertEquals(listOf("g1"), lesson.groupIds)
     }
+    @Test fun cacheFileNamesAreDeterministicAndDoNotExposeInputs() {
+        val name = Repository.cacheFileName("school.edupage.org", "227")
+        assertTrue(name.matches(Regex("[0-9a-f]{64}\\.json")))
+        assertEquals(name, Repository.cacheFileName("school.edupage.org", "227"))
+        assertFalse(name.contains("school"))
+        assertFalse(name.contains("227"))
+    }
     @Test fun supportsTeacherAndRoomSchedules() {
         assertEquals(1,timetable().lessonsOn(revision.from,Selection(ScheduleKind.TEACHER,"-1")).size)
         assertEquals(1,timetable().lessonsOn(revision.from,Selection(ScheduleKind.ROOM,"-8")).size)

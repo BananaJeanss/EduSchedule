@@ -29,5 +29,5 @@ jobs:
         with:
           languages: java-kotlin
           build-mode: manual
-      - run: ./gradlew clean assembleDebug --no-build-cache --no-configuration-cache --no-daemon -Pkotlin.compiler.execution.strategy=in-process
+      - run: ./gradlew clean assembleDebug testDebugUnitTest assembleDebugAndroidTest --no-build-cache --no-configuration-cache --no-daemon -Pkotlin.compiler.execution.strategy=in-process
       - uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4
