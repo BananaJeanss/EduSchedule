@@ -108,7 +108,9 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
             .createNotificationChannel(
                 NotificationChannel(channel, "Timetable and app updates", NotificationManager.IMPORTANCE_DEFAULT)
             )
-        val intent = Intent(applicationContext, MainActivity::class.java)
+        val intent = Intent()
+            .setClass(applicationContext, MainActivity::class.java)
+            .setPackage(applicationContext.packageName)
             .putExtra(MainActivity.EXTRA_OPEN_SETTINGS, openUpdates)
         val pending = PendingIntent.getActivity(
             applicationContext,
