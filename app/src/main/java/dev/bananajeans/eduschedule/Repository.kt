@@ -43,12 +43,15 @@ class Preferences(context: Context) {
         get() = prefs.getString("zone", ZoneId.systemDefault().id)!!
         set(value) { ZoneId.of(value); prefs.edit { putString("zone", value) } }
     companion object {
+        private val eduPageHost = Regex("[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.edupage\\.org")
+
+        fun isEduPageHost(host: String): Boolean = eduPageHost.matches(host.lowercase())
+
         fun normalizeHost(input: String): String {
             val value = input.trim().lowercase()
             val uri = URI(if (value.contains("://")) value else "https://$value")
             val host = uri.host.orEmpty()
-            require(uri.scheme == "https" && uri.userInfo == null && uri.port == -1 &&
-                Regex("[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.edupage\\.org").matches(host)) {
+            require(uri.scheme == "https" && uri.userInfo == null && uri.port == -1 && isEduPageHost(host)) {
                 "Enter a public school address such as school.edupage.org."
             }
             return host
