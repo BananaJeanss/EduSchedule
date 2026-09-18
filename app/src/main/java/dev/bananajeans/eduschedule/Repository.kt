@@ -152,19 +152,50 @@ class Repository(context: Context) {
     }
 }
 
-data class AppRelease(val version: String, val url: String)
+data class AppRelease(val version: String) {
+    val plainVersion: String get() = version.removePrefix("v")
+    val apkName: String get() = "EduSchedule-$plainVersion.apk"
+}
+
 object Updates {
     const val REPOSITORY = "BananaJeanss/EduSchedule"
-    fun version(value: String): List<Int>? = Regex("^v?(\\d+)\\.(\\d+)\\.(\\d+)$").matchEntire(value)?.groupValues?.drop(1)?.map { it.toIntOrNull() ?: return null }
+
+    fun version(value: String): List<Int>? = Regex("^v?(\\d+)\\.(\\d+)\\.(\\d+)$")
+        .matchEntire(value)?.groupValues?.drop(1)?.map { it.toIntOrNull() ?: return null }
+
     fun isNewer(remote: String, local: String): Boolean {
-        val a = version(remote) ?: return false; val b = version(local.substringBefore('-')) ?: return false
+        val a = version(remote) ?: return false
+        val b = version(local.substringBefore('-')) ?: return false
         return a.zip(b).firstOrNull { it.first != it.second }?.let { it.first > it.second } ?: false
     }
+
+    internal fun assetUri(release: AppRelease, name: String): URI {
+        require(version(release.version) != null) { "Invalid release version." }
+        require(name == release.apkName || name == "SHA256SUMS") { "Unexpected release asset." }
+        return URI("https://github.com/$REPOSITORY/releases/download/${release.version}/$name")
+    }
+
+    internal fun checksumFor(manifest: String, fileName: String): String? = manifest.lineSequence()
+        .map { it.trim().split(Regex("\\s+"), limit = 2) }
+        .firstOrNull { parts -> parts.size == 2 && parts[1].removePrefix("*") == fileName }
+        ?.firstOrNull()
+        ?.lowercase()
+        ?.takeIf { it.matches(Regex("[0-9a-f]{64}")) }
+
     suspend fun check(): AppRelease? = withContext(Dispatchers.IO) {
         val raw = JSONObject(Http.request(URI("https://api.github.com/repos/$REPOSITORY/releases/latest")))
         val tag = raw.getString("tag_name")
-        if (!raw.optBoolean("draft") && !raw.optBoolean("prerelease") && version(tag) != null && isNewer(tag, BuildConfig.VERSION_NAME)) {
-            AppRelease(tag, "https://github.com/$REPOSITORY/releases/tag/$tag")
-        } else null
+        if (raw.optBoolean("draft") || raw.optBoolean("prerelease") || version(tag) == null ||
+            !isNewer(tag, BuildConfig.VERSION_NAME)) return@withContext null
+
+        val release = AppRelease(tag)
+        val assets = raw.optJSONArray("assets")
+        val names = (0 until (assets?.length() ?: 0)).mapNotNull { index ->
+            assets?.optJSONObject(index)?.optString("name")?.takeIf(String::isNotBlank)
+        }.toSet()
+        require(release.apkName in names && "SHA256SUMS" in names) {
+            "The latest release is missing verified Android update assets."
+        }
+        release
     }
 }

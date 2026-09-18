@@ -34,6 +34,8 @@ Especially relevant areas include:
 
 EduSchedule intentionally reads only public timetable data from a user-supplied `*.edupage.org` host over HTTPS. It does not support authenticated/private scraping.
 
+The self-updater accepts only stable releases from this repository. It constructs expected asset URLs rather than trusting arbitrary download URLs, restricts redirects to GitHub release-asset hosts, verifies `SHA256SUMS`, and requires the downloaded APK package/version/signing certificate to match the installed app before invoking Android `PackageInstaller`.
+
 ## Disclosure
 
 Please allow reasonable time for a fix and release before publishing vulnerability details. There is currently no bug bounty program.

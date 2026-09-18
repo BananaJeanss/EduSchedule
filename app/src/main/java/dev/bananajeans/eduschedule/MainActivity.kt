@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.CalendarContract
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -43,11 +44,16 @@ import java.time.temporal.TemporalAdjusters
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState); enableEdgeToEdge()
+        val openSettings = intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)
         setContent {
             val vm: ScheduleViewModel = viewModel()
             val state by vm.state.collectAsStateWithLifecycle()
-            EduTheme(state.theme, state.dynamic) { ScheduleApp(vm, state) }
+            EduTheme(state.theme, state.dynamic) { ScheduleApp(vm, state, openSettings) }
         }
+    }
+
+    companion object {
+        const val EXTRA_OPEN_SETTINGS = "open_settings"
     }
 }
 @Composable fun EduTheme(theme: String = "System", dynamic: Boolean = true, content: @Composable () -> Unit) {
@@ -61,13 +67,13 @@ class MainActivity : ComponentActivity() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable fun ScheduleApp(vm: ScheduleViewModel, s: ScheduleState) {
+@Composable fun ScheduleApp(vm: ScheduleViewModel, s: ScheduleState, openSettingsInitially: Boolean = false) {
     if (s.host.isBlank()) { SetupScreen(vm, s.zone); return }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var tab by rememberSaveable { mutableStateOf("Day") }
     var menu by remember { mutableStateOf(false) }
-    var settings by rememberSaveable { mutableStateOf(false) }
+    var settings by rememberSaveable { mutableStateOf(openSettingsInitially) }
     var showExport by remember { mutableStateOf(false) }
     var showDate by remember { mutableStateOf(false) }
     var detail by remember { mutableStateOf<DatedLesson?>(null) }
@@ -83,6 +89,26 @@ class MainActivity : ComponentActivity() {
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         vm.notifications(granted); if (!granted) vm.message("Notifications are off. You can enable them in Android settings.")
+    }
+    val installPermission = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (context.packageManager.canRequestPackageInstalls()) vm.installUpdate()
+        else vm.message("Allow installs from EduSchedule to install updates in the app.")
+    }
+    fun requestUpdateInstall() {
+        if (context.packageManager.canRequestPackageInstalls()) {
+            vm.installUpdate()
+            return
+        }
+        try {
+            installPermission.launch(
+                Intent(
+                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    "package:${context.packageName}".toUri()
+                )
+            )
+        } catch (_: Exception) {
+            vm.message("Open Android settings and allow installs from EduSchedule.")
+        }
     }
     fun open(url: String) {
         try {
@@ -139,7 +165,7 @@ class MainActivity : ComponentActivity() {
             if (settings) SettingsScreen(s, vm, {
                 if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                     permission.launch(Manifest.permission.POST_NOTIFICATIONS) else vm.notifications(true)
-            }, ::open)
+            }, ::requestUpdateInstall, ::open)
             else Column {
                 if (s.error != null) EmptyState("Couldn't load this date", s.error, "Retry") { vm.refresh(true) }
                 else if (timetable == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -494,7 +520,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-@Composable fun SettingsScreen(s: ScheduleState, vm: ScheduleViewModel, enableNotifications: () -> Unit, open: (String) -> Unit) {
+@Composable fun SettingsScreen(s: ScheduleState, vm: ScheduleViewModel, enableNotifications: () -> Unit, installUpdate: () -> Unit, open: (String) -> Unit) {
     var host by remember(s.host) { mutableStateOf(s.host) }
     var zone by remember(s.zone) { mutableStateOf(s.zone) }
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -508,8 +534,49 @@ class MainActivity : ComponentActivity() {
         item { HorizontalDivider(); Spacer(Modifier.height(16.dp)); Text("Notifications", style = MaterialTheme.typography.titleLarge) }
         item { SettingSwitch("Class reminders", "Notify when your saved class starts. Alerts include Mute 1h and Mute today; timetable-change and app-update alerts are included too. Android may delay background work.", s.notifications) { if (it) enableNotifications() else vm.notifications(false) } }
         item { Spacer(Modifier.height(8.dp)); Text("Updates", style = MaterialTheme.typography.titleLarge) }
-        item { OutlinedButton(onClick = { vm.updates() }, enabled = !s.updateChecking) { Text(if (s.updateChecking) "Checking…" else "Check for app updates") } }
-        s.release?.let { release -> item { Button(onClick = { open(release.url) }) { Text("View ${release.version}") } } }
+        item {
+            OutlinedButton(
+                onClick = { vm.updates() },
+                enabled = !s.updateChecking && !s.updateDownloading
+            ) { Text(if (s.updateChecking) "Checking…" else "Check for app updates") }
+        }
+        s.release?.let { release ->
+            item {
+                Card {
+                    Column(
+                        Modifier.fillMaxWidth().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text("EduSchedule ${release.version}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            if (s.updateDownloading) "Downloading and verifying the signed APK…"
+                            else "Download the verified APK here. Android will ask you to confirm the update.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (s.updateDownloading) {
+                            val progress = s.updateProgress
+                            if (progress == null) LinearProgressIndicator(Modifier.fillMaxWidth())
+                            else {
+                                LinearProgressIndicator(progress = { progress / 100f }, modifier = Modifier.fillMaxWidth())
+                                Text(
+                                    if (progress < 100) "$progress%" else "Verifying…",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Button(
+                            onClick = installUpdate,
+                            enabled = !s.updateDownloading,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(if (s.updateDownloading) "Preparing update…" else "Download & install")
+                        }
+                    }
+                }
+            }
+        }
         val groups = s.snapshot?.timetable?.groups?.get(s.selection?.id).orEmpty()
         if (s.selection?.kind == ScheduleKind.CLASS && groups.isNotEmpty()) {
             item { HorizontalDivider(); Spacer(Modifier.height(16.dp)); Text("Visible groups", style = MaterialTheme.typography.titleLarge); Text("Hide groups you don't attend. Whole-class lessons stay visible.", style = MaterialTheme.typography.bodyMedium) }

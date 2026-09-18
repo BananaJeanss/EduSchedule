@@ -85,4 +85,18 @@ class TimetableTest {
         assertTrue(Updates.isNewer("v1.10.0","1.9.0")); assertFalse(Updates.isNewer("v1.0.0-beta","0.1.0"))
         assertFalse(Updates.isNewer("v1.0.0","1.0.0")); assertFalse(Updates.isNewer("v0.9.0","1.0.0"))
     }
+    @Test fun updateAssetsArePinnedAndChecksumsAreParsedExactly() {
+        val release = AppRelease("v0.3.0")
+        assertEquals("EduSchedule-0.3.0.apk", release.apkName)
+        assertEquals(
+            "https://github.com/BananaJeanss/EduSchedule/releases/download/v0.3.0/EduSchedule-0.3.0.apk",
+            Updates.assetUri(release, release.apkName).toString()
+        )
+        val hash = "a".repeat(64)
+        val manifest = "$hash  EduSchedule-0.3.0.apk\nbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb  EduSchedule-0.3.0.aab\n"
+        assertEquals(hash, Updates.checksumFor(manifest, release.apkName))
+        assertNull(Updates.checksumFor(manifest, "EduSchedule-0.4.0.apk"))
+        assertTrue(runCatching { Updates.assetUri(release, "../other.apk") }.isFailure)
+        assertTrue(runCatching { Updates.assetUri(AppRelease("../../bad"), "SHA256SUMS") }.isFailure)
+    }
 }

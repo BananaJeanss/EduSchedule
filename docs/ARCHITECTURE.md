@@ -22,6 +22,12 @@ An opt-in hourly WorkManager task refreshes the default class; Android battery r
 
 Calendar insertion uses `ACTION_INSERT`, giving the user control of the destination calendar and event. It needs no calendar read/write permissions. Week exports use Storage Access Framework, no broad storage permission. Events have stable UIDs, UTC timestamps converted from the school zone, escaped text and UTF-8-safe 75-octet folding. CSV quotes fields and neutralizes spreadsheet formula prefixes.
 
+## In-app updates
+
+Release discovery still uses GitHub's latest stable release API. For an available version, `Updater.kt` constructs only the expected repository release URLs, follows HTTPS redirects only to an allowlist of GitHub release-asset hosts, downloads `SHA256SUMS` and the matching APK into app-private cache, enforces size limits, verifies the published SHA-256, package name, version name, increasing version code, and signing certificate against the installed app, then streams the APK into a `PackageInstaller` session.
+
+Android 8+ treats EduSchedule as an external install source, so the user must explicitly allow installs from EduSchedule once and Android still owns the final update-confirmation UI. There is no silent installation. The temporary APK is removed after it has been copied into the installer session, including on failure. Debug builds have a different package name/signing key and therefore cannot self-update from production releases.
+
 ## Known scope boundaries
 
 - Regular published timetable only; no substitution/holiday overlay or login.
