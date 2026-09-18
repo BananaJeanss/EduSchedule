@@ -5,9 +5,9 @@
 {"id":"classrooms","data_rows":[{"id":"-8","name":"Studio"}]},
 {"id":"subjects","data_rows":[{"id":"s1","name":"Art, design; studio"}]},
 {"id":"groups","data_rows":[{"id":"g0","classid":"*1","name":"Whole class","entireclass":true},{"id":"g1","classid":"*1","name":"Group 1","entireclass":false}]},
-{"id":"periods","data_rows":[{"id":"4","period":"4","name":"WRONG 13:00","starttime":"13:30","endtime":"14:45"},{"id":"5","period":"5","starttime":"14:55","endtime":"16:10"},{"id":"7","period":"7","starttime":"00:00","endtime":"00:00"}]},
+{"id":"periods","data_rows":[{"id":"4","period":"4","name":"P4 - 13:00-13:45","short":"P4 - 13:00-13:45","starttime":"13:30","endtime":"14:45"},{"id":"5","period":"5","name":"P5 - 13:55-14:40","short":"P5 - 13:55-14:40","starttime":"14:55","endtime":"16:10"},{"id":"7","period":"7","starttime":"00:00","endtime":"00:00"}]},
 {"id":"bells","data_rows":[{"id":"5","perioddata":{"4":{"starttime":"13:20","endtime":"14:35","daydata":{"1":{"starttime":"13:25","endtime":"14:40"}}},"5":{"starttime":"14:45","endtime":"16:00"}}}]},
 {"id":"weeks","data_rows":[{"id":"0","name":"A"},{"id":"1","name":"B"}]},
 {"id":"lessons","data_rows":[{"id":"l1","subjectid":"s1","teacherids":["-1"],"classids":["*1"],"groupids":["g1"],"durationperiods":2},{"id":"l2","subjectid":"s1","teacherids":["-1"],"classids":["*1"],"groupids":["g0"],"durationperiods":1}]},
-{"id":"cards","data_rows":[{"id":"c1","lessonid":"l1","period":"4","days":"11000","weeks":"10","classroomids":["-8"]},{"id":"c2","lessonid":"l2","period":"7","days":"10000","weeks":"01","classroomids":["-8"]}]}
+{"id":"cards","data_rows":[{"id":"c1","lessonid":"l1","period":"4","days":"11000","weeks":"10","classroomids":["-8"]},{"id":"c2","lessonid":"l2","period":"7","days":"10000","weeks":"01","classroomids":["-8"]},{"id":"c3","lessonid":"l2","period":"5","days":"00100","weeks":"01","classroomids":["-8"]}]}
 ]}}}
