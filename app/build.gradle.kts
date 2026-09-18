@@ -7,7 +7,7 @@ android {
         minSdk = 26
         targetSdk = 37
         versionCode = providers.gradleProperty("versionCode").orElse("1").get().toInt()
-        versionName = providers.gradleProperty("versionName").orElse("0.3.0").get()
+        versionName = providers.gradleProperty("versionName").orElse("0.3.1").get()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     val signingFile = providers.environmentVariable("SIGNING_KEYSTORE_PATH")
