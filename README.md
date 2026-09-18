@@ -35,6 +35,7 @@ Debug installs separately as `dev.bananajeans.eduschedule.debug`. Release is `de
 - [Build, release signing and updates](docs/RELEASING.md)
 - [Dependency verification](docs/DEPENDENCIES.md)
 - [Privacy](docs/PRIVACY.md)
+- [Design standards](DESIGN.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [Agent/contributor instructions](AGENTS.md)
