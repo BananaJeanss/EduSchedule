@@ -31,7 +31,7 @@ android {
     buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     testOptions { unitTests.isReturnDefaultValues = true }
-    lint { abortOnError = true; checkReleaseBuilds = true }
+    lint { abortOnError = true; checkReleaseBuilds = true; disable += "NewerVersionAvailable" }
 }
 kotlin { jvmToolchain(17) }
 dependencies {
