@@ -52,7 +52,9 @@
     <string name="schedule_kind_teachers">Teachers</string>
     <string name="schedule_kind_classes">Classes</string>
     <string name="group">Group</string>
-    <string name="open_schedule">Open %1$s schedule</string>
+    <string name="open_room_schedule">Open room schedule</string>
+    <string name="open_teacher_schedule">Open teacher schedule</string>
+    <string name="open_class_schedule">Open class schedule</string>
     <string name="selected">Selected</string>
     <string name="search_classes">Search classes</string>
     <string name="search_teachers">Search teachers</string>
