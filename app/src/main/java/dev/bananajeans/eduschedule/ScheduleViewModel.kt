@@ -133,6 +133,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         try {
             val zoneId = ZoneId.of(zone)
             val host = Preferences.normalizeHost(value)
+            ClassReminders.cancelAll(getApplication())
             preferences.host = host
             preferences.zone = zoneId.id
             preferences.cycleWeek = 0
@@ -239,20 +240,28 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun scheduleReminders() {
         val state = mutable.value
-        if (!state.notifications || state.home.isBlank() || state.host.isBlank()) return
+        if (!state.notifications || state.home.isBlank() || state.host.isBlank()) {
+            ClassReminders.cancelAll(getApplication())
+            return
+        }
         val zone = ZoneId.of(state.zone)
         val today = LocalDate.now(zone)
-        val snapshot = dayCache[today] ?: state.week[today] ?: state.snapshot?.takeIf { state.date == today } ?: return
-        ClassReminders.scheduleDay(
-            getApplication(),
-            today,
-            snapshot.timetable,
-            state.home,
-            state.hidden,
-            state.cycleWeek,
-            zone,
-            state.classReminderLeadMinutes
-        )
+        listOf(today, today.plusDays(1)).forEach { date ->
+            val snapshot = dayCache[date]
+                ?: state.week[date]
+                ?: state.snapshot?.takeIf { state.date == date }
+                ?: return@forEach
+            ClassReminders.scheduleDay(
+                getApplication(),
+                date,
+                snapshot.timetable,
+                state.home,
+                state.hidden,
+                state.cycleWeek,
+                zone,
+                state.classReminderLeadMinutes
+            )
+        }
     }
 
     fun updates() {

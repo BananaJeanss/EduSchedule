@@ -32,7 +32,7 @@ EduPage-provided names are source data rather than application copy. Subject, cl
 
 ## Cache policy
 
-Index refresh: 30 minutes. Revision data: six hours. Manual refresh bypasses both. Foreground prefetch loads the selected week and keeps a bounded in-memory day cache so revisiting a loaded date is immediate. Disk cache size is bounded. Parsed payloads are validated before replacing a working snapshot, and `AtomicFile` preserves the prior copy if a write is interrupted.
+Index refresh: 30 minutes. Revision data: six hours. Manual refresh bypasses both. Foreground prefetch loads the selected week and keeps a bounded in-memory day cache so revisiting a loaded date is immediate. Background reminder rescheduling may also read the validated disk cache, including after reboot when network access is unavailable; it never fabricates lesson data. Disk cache size is bounded. Parsed payloads are validated before replacing a working snapshot, and `AtomicFile` preserves the prior copy if a write is interrupted.
 
 ## Limitations
 

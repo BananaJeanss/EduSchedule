@@ -13,7 +13,7 @@
 - `MainActivity.kt`: Compose UI, first-run setup and user-mediated calendar/export actions.
 - `LessonBlocks.kt`: class-only presentation grouping for parallel split lessons; underlying lessons stay distinct.
 - `Background.kt`: opt-in refresh/change notifications.
-- `ClassReminders.kt`: class-start WorkManager jobs and mute actions; never claim exact delivery.
+- `ClassReminders.kt`: AlarmManager-backed class reminders, stale-delivery suppression, reboot/update rescheduling, legacy WorkManager draining, and mute actions.
 - `Exports.kt`: pure RFC 5545/CSV serialization.
 
 ## Required checks
