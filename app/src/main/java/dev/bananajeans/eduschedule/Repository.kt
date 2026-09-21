@@ -15,7 +15,7 @@ import javax.net.ssl.HttpsURLConnection
 import java.net.URI
 import java.time.*
 
-data class Snapshot(val timetable: Timetable, val fetched: Instant, val offline: Boolean, val warning: String? = null)
+data class Snapshot(val timetable: Timetable, val fetched: Instant, val offline: Boolean)
 class Preferences(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     var host: String
@@ -142,8 +142,7 @@ class Repository(context: Context) {
                 } catch (e: Exception) { if (data == null) throw e; offline = true }
             }
             val timetable = EduPageParser.parse(data!!.getString("raw"), revision)
-            Snapshot(timetable, Instant.parse(data.getString("fetched")), offline,
-                if (offline) "Offline · showing saved timetable" else null)
+            Snapshot(timetable, Instant.parse(data.getString("fetched")), offline)
         }
     }
     companion object {
