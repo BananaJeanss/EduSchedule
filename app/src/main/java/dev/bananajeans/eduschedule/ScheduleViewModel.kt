@@ -32,6 +32,7 @@ data class ScheduleState(
     val home: String = "",
     val host: String = "",
     val notifications: Boolean = false,
+    val classReminderLeadMinutes: Int = 10,
     val zone: String = ZoneId.systemDefault().id
 )
 
@@ -52,6 +53,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
             selection = preferences.home.takeIf(String::isNotBlank)?.let { Selection(ScheduleKind.CLASS, it) },
             host = preferences.host,
             notifications = preferences.notifications,
+            classReminderLeadMinutes = preferences.classReminderLeadMinutes,
             zone = preferences.zone
         )
     )
@@ -110,6 +112,13 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         mutable.update { it.copy(notifications = value) }
         Background.configure(getApplication(), value)
         if (value) scheduleReminders()
+    }
+
+    fun classReminderLeadMinutes(value: Int) {
+        val minutes = value.coerceIn(0, 60)
+        preferences.classReminderLeadMinutes = minutes
+        mutable.update { it.copy(classReminderLeadMinutes = minutes) }
+        scheduleReminders()
     }
 
     fun school(value: String, zone: String) {
@@ -233,7 +242,8 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
             state.home,
             state.hidden,
             state.cycleWeek,
-            zone
+            zone,
+            state.classReminderLeadMinutes
         )
     }
 

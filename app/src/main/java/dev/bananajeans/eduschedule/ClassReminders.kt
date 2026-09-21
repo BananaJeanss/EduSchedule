@@ -32,32 +32,45 @@ object ClassReminders {
         home: String,
         hiddenGroups: Set<String>,
         cycleWeek: Int,
-        zone: ZoneId
+        zone: ZoneId,
+        preReminderMinutes: Int
     ) {
         if (home.isBlank()) return
         val manager = WorkManager.getInstance(context)
         manager.cancelAllWorkByTag(TAG)
         val now = Instant.now()
-        timetable.lessonBlocksOn(date, Selection(ScheduleKind.CLASS, home), hiddenGroups, cycleWeek).forEach { block ->
-            val start = block.start ?: return@forEach
-            val at = date.atTime(start).atZone(zone).toInstant()
-            if (!at.isAfter(now)) return@forEach
-            val request = OneTimeWorkRequestBuilder<ClassReminderWorker>()
-                .setInitialDelay(Duration.between(now, at).toMillis(), TimeUnit.MILLISECONDS)
-                .setInputData(workDataOf(
-                    "id" to block.id,
-                    "title" to block.title,
-                    "detail" to reminderDetail(block)
-                ))
-                .addTag(TAG)
-                .build()
-            manager.enqueueUniqueWork(
-                "class-reminder-$date-${block.id.hashCode()}",
-                ExistingWorkPolicy.REPLACE,
-                request
-            )
+        timetable.lessonBlocksOn(date, Selection(ScheduleKind.CLASS, home), hiddenGroups, cycleWeek).forEach blockLoop@ { block ->
+            val start = block.start ?: return@blockLoop
+            val startAt = date.atTime(start).atZone(zone).toInstant()
+            reminderOffsets(preReminderMinutes).forEach reminderLoop@ { minutesBefore ->
+                val fireAt = startAt.minusSeconds(minutesBefore * 60L)
+                if (!fireAt.isAfter(now)) return@reminderLoop
+                val request = OneTimeWorkRequestBuilder<ClassReminderWorker>()
+                    .setInitialDelay(Duration.between(now, fireAt).toMillis(), TimeUnit.MILLISECONDS)
+                    .setInputData(workDataOf(
+                        "id" to block.id,
+                        "title" to block.title,
+                        "detail" to reminderDetail(block),
+                        "minutesBefore" to minutesBefore
+                    ))
+                    .addTag(TAG)
+                    .build()
+                manager.enqueueUniqueWork(
+                    "class-reminder-$date-${block.id.hashCode()}-$minutesBefore",
+                    ExistingWorkPolicy.REPLACE,
+                    request
+                )
+            }
         }
     }
+
+    internal fun reminderOffsets(preReminderMinutes: Int): List<Int> {
+        val lead = preReminderMinutes.coerceIn(0, 60)
+        return if (lead == 0) listOf(0) else listOf(lead, 0)
+    }
+
+    internal fun notificationTitle(title: String, minutesBefore: Int): String =
+        if (minutesBefore > 0) "$title starts in $minutesBefore min" else "$title starts now"
 
     private fun reminderDetail(block: LessonBlock): String {
         if (block.lessons.size == 1) {
@@ -77,7 +90,7 @@ object ClassReminders {
         }
     }
 
-    internal fun show(context: Context, title: String, detail: String, notificationId: Int) {
+    internal fun show(context: Context, title: String, detail: String, notificationId: Int, minutesBefore: Int) {
         if (System.currentTimeMillis() < mutedUntil(context)) return
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
@@ -98,7 +111,7 @@ object ClassReminders {
 
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("$title starts now")
+            .setContentTitle(notificationTitle(title, minutesBefore))
             .setContentText(detail)
             .setStyle(NotificationCompat.BigTextStyle().bigText(detail))
             .setContentIntent(open)
@@ -120,7 +133,8 @@ class ClassReminderWorker(context: Context, parameters: WorkerParameters) : Work
         val title = inputData.getString("title") ?: return Result.failure()
         val detail = inputData.getString("detail").orEmpty()
         val id = (inputData.getString("id") ?: title).hashCode().and(Int.MAX_VALUE)
-        ClassReminders.show(applicationContext, title, detail, id)
+        val minutesBefore = inputData.getInt("minutesBefore", 0)
+        ClassReminders.show(applicationContext, title, detail, id, minutesBefore)
         return Result.success()
     }
 }
