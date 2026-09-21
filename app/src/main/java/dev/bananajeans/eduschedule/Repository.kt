@@ -39,6 +39,9 @@ class Preferences(context: Context) {
     var classReminderLeadMinutes: Int
         get() = prefs.getInt("classReminderLeadMinutes", 10).coerceIn(0, 60)
         set(value) { prefs.edit { putInt("classReminderLeadMinutes", value.coerceIn(0, 60)) } }
+    var language: AppLanguage
+        get() = AppLanguage.fromPreference(prefs.getString("language", AppLanguage.SYSTEM.preferenceValue))
+        set(value) { prefs.edit { putString("language", value.preferenceValue) } }
     var cycleWeek: Int
         get() = prefs.getInt("cycleWeek", 0)
         set(value) { prefs.edit { putInt("cycleWeek", value.coerceAtLeast(0)) } }
