@@ -1,0 +1,161 @@
+<resources>
+    <string name="settings">Seaded</string>
+    <string name="your_timetable">Sinu tunniplaan</string>
+    <string name="back">Tagasi</string>
+    <string name="refresh_timetable">Värskenda tunniplaani</string>
+    <string name="more_options">Rohkem valikuid</string>
+    <string name="choose_schedule">Vali tunniplaan</string>
+    <string name="my_class">Minu klass</string>
+    <string name="make_this_my_class">Määra see minu klassiks</string>
+    <string name="default_class_saved">Vaikeklass salvestatud.</string>
+    <string name="export_week">Ekspordi nädal</string>
+    <string name="open_school_timetable">Ava kooli tunniplaan</string>
+    <string name="day">Päev</string>
+    <string name="week">Nädal</string>
+    <string name="browse">Sirvi</string>
+    <string name="today">Täna</string>
+    <string name="retry">Proovi uuesti</string>
+    <string name="couldnt_load_date">Selle kuupäeva tunniplaani ei õnnestunud laadida</string>
+    <string name="using_saved_offline_timetable">Kasutan salvestatud võrguühenduseta tunniplaani</string>
+    <string name="offline_saved_at">Võrguühenduseta · salvestatud %1$s</string>
+    <string name="previous_day">Eelmine päev</string>
+    <string name="previous_week">Eelmine nädal</string>
+    <string name="next_day">Järgmine päev</string>
+    <string name="next_week">Järgmine nädal</string>
+    <string name="go">Vali</string>
+    <string name="cancel">Tühista</string>
+
+    <string name="export_this_week">Ekspordi see nädal</string>
+    <string name="export_description">Nähtavate tundide kuupäevadega koopia. Google Calendar saab .ics-faili veebis importida. Ekspordid ei uuene automaatselt.</string>
+    <string name="export_partial_warning">Mõnda kuupäeva ei õnnestunud laadida; värskenda enne eksportimist.</string>
+    <string name="calendar_ics">Kalender (.ics)</string>
+    <string name="spreadsheet_csv">Arvutustabel (.csv)</string>
+    <string name="timetable">Tunniplaan</string>
+    <string name="calendar_event_description">Avaldatud tunniplaan; asendusi vaata EduPage’ist.</string>
+    <string name="install_calendar_or_export">Paigalda kalendrirakendus või ekspordi nädal .ics-failina.</string>
+    <string name="add_to_calendar">Lisa kalendrisse</string>
+
+    <string name="schedule_kind_room">Ruum</string>
+    <string name="schedule_kind_teacher">Õpetaja</string>
+    <string name="schedule_kind_class">Klass</string>
+    <string name="schedule_kind_rooms">Ruumid</string>
+    <string name="schedule_kind_teachers">Õpetajad</string>
+    <string name="schedule_kind_classes">Klassid</string>
+    <string name="group">Rühm</string>
+    <string name="open_schedule">Ava %1$s tunniplaan</string>
+    <string name="selected">Valitud</string>
+    <string name="search_classes">Otsi klasse</string>
+    <string name="search_teachers">Otsi õpetajaid</string>
+    <string name="search_rooms">Otsi ruume</string>
+
+    <string name="setup_description">Seadista oma avalik EduPage’i tunniplaan. Kontot ega sisselogimist pole vaja.</string>
+    <string name="edupage_address">EduPage’i aadress</string>
+    <string name="edupage_address_help">Kasuta kooli avalikku *.edupage.org aadressi.</string>
+    <string name="school_time_zone">Kooli ajavöönd</string>
+    <string name="timezone_example">Näiteks Europe/Tallinn</string>
+    <string name="check_address_timezone">Kontrolli aadressi ja ajavööndit.</string>
+    <string name="continue_action">Jätka</string>
+    <string name="setup_privacy">EduSchedule loeb ainult sinu antud avalikku tunniplaani. Seda saab hiljem Seadetes muuta.</string>
+
+    <string name="make_it_yours">Pane tunniplaan paika</string>
+    <string name="choose_class_to_start">Alustamiseks vali oma klass.</string>
+    <string name="no_matches">Vasteid ei leitud</string>
+    <string name="try_another_schedule">Proovi teist nime või tunniplaani tüüpi.</string>
+
+    <string name="happening_now">PRAEGU KÄIB</string>
+    <string name="up_next">JÄRGMISENA</string>
+    <string name="clear_schedule">TÜHI PÄEV</string>
+    <string name="all_done">KÕIK TEHTUD</string>
+    <string name="empty_day_1">Tahvel on tühi.</string>
+    <string name="empty_day_2">Täna tunde pole. Naudi pausi.</string>
+    <string name="empty_day_3">Tühi päev. Mõnus.</string>
+    <string name="empty_day_4">Täna pole avaldatud tunde.</string>
+    <string name="done_day_1">Päev ongi läbi.</string>
+    <string name="done_day_2">Tänaseks tehtud.</string>
+    <string name="done_day_3">Kõik tunnid on läbi.</string>
+    <string name="done_day_4">Päev tehtud.</string>
+    <string name="no_published_lessons_selection">Selle valiku jaoks pole avaldatud tunde.</string>
+    <string name="published_timetable_footer">Avaldatud tunniplaan · %1$s\nPäevased asendused ja pühad võivad erineda.</string>
+    <string name="time_now">%1$s praegu</string>
+    <plurals name="lesson_count">
+        <item quantity="one">%1$d tund</item>
+        <item quantity="other">%1$d tundi</item>
+    </plurals>
+    <plurals name="group_lessons">
+        <item quantity="one">%1$d rühmatund</item>
+        <item quantity="other">%1$d rühmatundi</item>
+    </plurals>
+    <plurals name="group_count">
+        <item quantity="one">%1$d rühm</item>
+        <item quantity="other">%1$d rühma</item>
+    </plurals>
+    <plurals name="group_options">
+        <item quantity="one">%1$d rühmavalik</item>
+        <item quantity="other">%1$d rühmavalikut</item>
+    </plurals>
+    <string name="loading">Laadimine…</string>
+    <string name="not_available_offline">Võrguühenduseta pole saadaval. Proovi värskendada.</string>
+    <string name="no_published_lessons">Avaldatud tunde pole</string>
+
+    <string name="appearance">Välimus</string>
+    <string name="theme_system">Süsteem</string>
+    <string name="theme_light">Hele</string>
+    <string name="theme_dark">Tume</string>
+    <string name="wallpaper_colors">Taustapildi värvid</string>
+    <string name="wallpaper_colors_description">Kasuta Androidi aktsentvärve</string>
+    <string name="language">Keel</string>
+    <string name="language_system">Süsteemi keel</string>
+    <string name="language_english">English</string>
+    <string name="language_estonian">Eesti</string>
+
+    <string name="your_school">Sinu kool</string>
+    <string name="save_school">Salvesta kool</string>
+    <string name="notifications">Teavitused</string>
+    <string name="class_reminders">Tunnimeeldetuletused</string>
+    <string name="class_reminders_description">Teavita sinu salvestatud klassi tundidest. Teavitustes on valikud „Vaigista 1 h” ja „Vaigista tänaseks”; kaasas on ka tunniplaani- ja rakenduse uuenduste teavitused. Android võib taustatööd edasi lükata.</string>
+    <string name="early_reminder">Eelmeeldetuletus</string>
+    <string name="early_reminder_description">Vali, kui kaua enne tunni algust märguanne saata. Tunni alguse teavitus saadetakse eraldi.</string>
+    <string name="off">Väljas</string>
+    <string name="minutes_short">%1$d min</string>
+
+    <string name="updates">Uuendused</string>
+    <string name="checking">Kontrollin…</string>
+    <string name="check_for_updates">Kontrolli rakenduse uuendusi</string>
+    <string name="downloading_verifying">Allalaadimine ja allkirjastatud APK kontrollimine…</string>
+    <string name="download_update_description">Laadi kontrollitud APK siit alla. Android palub uuenduse kinnitada.</string>
+    <string name="verifying">Kontrollin…</string>
+    <string name="preparing_update">Valmistan uuendust ette…</string>
+    <string name="download_install">Laadi alla ja paigalda</string>
+    <string name="visible_groups">Nähtavad rühmad</string>
+    <string name="visible_groups_description">Peida rühmad, kus sa ei käi. Kogu klassi tunnid jäävad nähtavaks.</string>
+    <string name="about_description">Sõltumatu avalike EduPage’i tunniplaanide lugeja. Kontot, reklaame ega analüütikat pole. Tunniplaanid salvestatakse sellesse seadmesse. Tavaline tunniplaan ei pruugi sisaldada asendusi ega pühi.</string>
+    <string name="source_help_privacy">Lähtekood, abi ja privaatsus</string>
+
+    <string name="export_saved">Eksport salvestatud.</string>
+    <string name="export_save_failed">Eksporti ei õnnestunud salvestada. Proovi teist asukohta.</string>
+    <string name="notifications_disabled">Teavitused on välja lülitatud. Saad need Androidi seadetes sisse lülitada.</string>
+    <string name="allow_installs">Rakendusesiseste uuenduste jaoks luba EduSchedule’il rakendusi paigaldada.</string>
+    <string name="allow_installs_settings">Ava Androidi seaded ja luba EduSchedule’ist paigaldamine.</string>
+    <string name="no_app_for_link">Ükski rakendus ei saa seda linki avada.</string>
+    <string name="up_to_date">Rakendus on ajakohane.</string>
+    <string name="version_available">Versioon %1$s on saadaval.</string>
+    <string name="release_check_failed">Uuendust ei õnnestunud kontrollida. Proovi hiljem uuesti.</string>
+    <string name="update_ready">Uuendus on kontrollitud. Kinnita paigaldamine Androidis.</string>
+    <string name="update_prepare_failed">Uuendust ei õnnestunud ette valmistada.</string>
+    <string name="timetable_load_failed">Tunniplaani ei õnnestunud laadida.</string>
+
+    <string name="class_reminders_channel">Tunnimeeldetuletused</string>
+    <string name="class_starts_in">%1$s algab %2$d min pärast</string>
+    <string name="class_starts_now">%1$s algab praegu</string>
+    <string name="mute_one_hour">Vaigista 1 h</string>
+    <string name="mute_today">Vaigista tänaseks</string>
+    <string name="timetable_updates_channel">Tunniplaani ja rakenduse uuendused</string>
+    <string name="timetable_updated">Tunniplaan uuendatud</string>
+    <string name="timetable_updated_body">Sinu salvestatud klassil on uus tunniplaan. Puuduta, et vaadata, mis muutus.</string>
+    <string name="app_update_available">Uuendus on saadaval. Ava Seaded, et uut versiooni vaadata.</string>
+
+    <string name="update_confirmation_failed">Android ei saanud uuenduse kinnitust avada.</string>
+    <string name="update_installed">EduSchedule on uuendatud.</string>
+    <string name="update_cancelled">Uuendus tühistatud.</string>
+    <string name="update_install_failed">Android ei saanud uuendust paigaldada.</string>
+</resources>
