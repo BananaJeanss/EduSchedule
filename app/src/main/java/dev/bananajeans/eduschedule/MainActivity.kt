@@ -532,7 +532,30 @@ class MainActivity : ComponentActivity() {
         item { OutlinedTextField(zone, { zone = it }, label = { Text("School time zone") }, supportingText = { Text("For example, Europe/Tallinn") }, singleLine = true, modifier = Modifier.fillMaxWidth()) }
         item { FilledTonalButton(onClick = { vm.school(host,zone) }, enabled = host != s.host || zone != s.zone) { Text("Save school") } }
         item { HorizontalDivider(); Spacer(Modifier.height(16.dp)); Text("Notifications", style = MaterialTheme.typography.titleLarge) }
-        item { SettingSwitch("Class reminders", "Notify when your saved class starts. Alerts include Mute 1h and Mute today; timetable-change and app-update alerts are included too. Android may delay background work.", s.notifications) { if (it) enableNotifications() else vm.notifications(false) } }
+        item { SettingSwitch("Class reminders", "Notify for your saved class. Alerts include Mute 1h and Mute today; timetable-change and app-update alerts are included too. Android may delay background work.", s.notifications) { if (it) enableNotifications() else vm.notifications(false) } }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Early reminder", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Choose how long before class to get a heads-up. The start-time alert still fires separately.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(0, 5, 10, 15, 30).forEach { minutes ->
+                        FilterChip(
+                            selected = s.classReminderLeadMinutes == minutes,
+                            onClick = { vm.classReminderLeadMinutes(minutes) },
+                            label = { Text(if (minutes == 0) "Off" else "$minutes min") },
+                            enabled = s.notifications
+                        )
+                    }
+                }
+            }
+        }
         item { Spacer(Modifier.height(8.dp)); Text("Updates", style = MaterialTheme.typography.titleLarge) }
         item {
             OutlinedButton(
