@@ -148,21 +148,37 @@ class MainActivity : ComponentActivity() {
         snackbarHost = { SnackbarHost(snack) },
         topBar = {
             TopAppBar(title = { Column {
-                Text(if (settings) "Settings" else selectedName ?: "Your timetable", fontWeight = FontWeight.SemiBold)
+                Text(
+                    if (settings) stringResource(R.string.settings) else selectedName ?: stringResource(R.string.your_timetable),
+                    fontWeight = FontWeight.SemiBold
+                )
                 if (!settings) Text(s.host.substringBefore('.'), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            } }, navigationIcon = { if (settings) IconButton(onClick = { settings = false }) { Glyph("back", "Back") } },
+            } }, navigationIcon = {
+                if (settings) IconButton(onClick = { settings = false }) {
+                    Glyph("back", stringResource(R.string.back))
+                }
+            },
                 actions = {
                     if (!settings) {
-                        IconButton(onClick = { vm.refresh(true) }, enabled = !s.loading) { if (s.loading) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) else Glyph("refresh", "Refresh timetable") }
+                        IconButton(onClick = { vm.refresh(true) }, enabled = !s.loading) {
+                            if (s.loading) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                            else Glyph("refresh", stringResource(R.string.refresh_timetable))
+                        }
                         Box {
-                            IconButton(onClick = { menu = true }) { Glyph("more", "More options") }
+                            IconButton(onClick = { menu = true }) {
+                                Glyph("more", stringResource(R.string.more_options))
+                            }
                             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                                DropdownMenuItem(text = { Text("Choose schedule") }, onClick = { menu = false; tab = "Browse" })
-                                if (s.home.isNotBlank()) DropdownMenuItem(text = { Text("My class") }, onClick = { vm.select(Selection(ScheduleKind.CLASS,s.home)); menu = false; tab = "Day" })
-                                if (s.selection?.kind == ScheduleKind.CLASS) DropdownMenuItem(text = { Text("Make this my class") }, onClick = { vm.home(s.selection.id); menu = false; vm.message("Default class saved.") })
-                                DropdownMenuItem(text = { Text("Export week") }, enabled = s.selection != null && s.week.isNotEmpty() && !s.loading, onClick = { menu = false; showExport = true })
-                                DropdownMenuItem(text = { Text("Open school timetable") }, onClick = { menu = false; open("https://${s.host}/timetable/") })
-                                DropdownMenuItem(text = { Text("Settings") }, onClick = { menu = false; settings = true })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.choose_schedule)) }, onClick = { menu = false; tab = "Browse" })
+                                if (s.home.isNotBlank()) DropdownMenuItem(text = { Text(stringResource(R.string.my_class)) }, onClick = { vm.select(Selection(ScheduleKind.CLASS,s.home)); menu = false; tab = "Day" })
+                                if (s.selection?.kind == ScheduleKind.CLASS) DropdownMenuItem(text = { Text(stringResource(R.string.make_this_my_class)) }, onClick = {
+                                    vm.home(s.selection.id)
+                                    menu = false
+                                    vm.message(context.getString(R.string.default_class_saved))
+                                })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.export_week)) }, enabled = s.selection != null && s.week.isNotEmpty() && !s.loading, onClick = { menu = false; showExport = true })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.open_school_timetable)) }, onClick = { menu = false; open("https://${s.host}/timetable/") })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.settings)) }, onClick = { menu = false; settings = true })
                             }
                         }
                     }
@@ -170,8 +186,17 @@ class MainActivity : ComponentActivity() {
         },
         bottomBar = {
             if (!settings) NavigationBar {
-                listOf("Day" to "day", "Week" to "week", "Browse" to "browse").forEach { (label, icon) ->
-                    NavigationBarItem(selected = tab == label, onClick = { tab = label }, icon = { Glyph(icon) }, label = { Text(label) })
+                listOf(
+                    Triple("Day", "day", R.string.day),
+                    Triple("Week", "week", R.string.week),
+                    Triple("Browse", "browse", R.string.browse)
+                ).forEach { (key, icon, label) ->
+                    NavigationBarItem(
+                        selected = tab == key,
+                        onClick = { tab = key },
+                        icon = { Glyph(icon) },
+                        label = { Text(stringResource(label)) }
+                    )
                 }
             }
         }
@@ -182,7 +207,11 @@ class MainActivity : ComponentActivity() {
                     permission.launch(Manifest.permission.POST_NOTIFICATIONS) else vm.notifications(true)
             }, ::requestUpdateInstall, ::open)
             else Column {
-                if (s.error != null) EmptyState("Couldn't load this date", s.error, "Retry") { vm.refresh(true) }
+                if (s.error != null) EmptyState(
+                    stringResource(R.string.couldnt_load_date),
+                    s.error,
+                    stringResource(R.string.retry)
+                ) { vm.refresh(true) }
                 else if (timetable == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 else {
                     if (s.snapshot.offline) Surface(color = MaterialTheme.colorScheme.tertiaryContainer) {
@@ -191,9 +220,13 @@ class MainActivity : ComponentActivity() {
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Glyph("offline", "Using saved offline timetable")
+                            Glyph("offline", stringResource(R.string.using_saved_offline_timetable))
                             Text(
-                                "Offline · saved ${s.snapshot.fetched.atZone(ZoneId.of(s.zone)).format(DateTimeFormatter.ofPattern("d MMM, HH:mm"))}",
+                                stringResource(
+                                    R.string.offline_saved_at,
+                                    s.snapshot.fetched.atZone(ZoneId.of(s.zone))
+                                        .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", locale))
+                                ),
                                 style = MaterialTheme.typography.labelMedium
                             )
                         }
@@ -202,10 +235,21 @@ class MainActivity : ComponentActivity() {
                         tab == "Browse" || s.selection == null -> BrowseScreen(timetable, s.selection, s.home, { vm.select(it); if (s.home.isBlank() && it.kind == ScheduleKind.CLASS) vm.home(it.id); tab = "Day" })
                         else -> {
                             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = { vm.date(s.date.minusDays(if (tab == "Week") 7 else 1)) }) { Glyph("back", "Previous ${tab.lowercase()}") }
-                                TextButton(onClick = { showDate = true }, modifier = Modifier.weight(1f)) { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { Text(s.date.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy"))); if (s.loading) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) } }
-                                IconButton(onClick = { vm.date(s.date.plusDays(if (tab == "Week") 7 else 1)) }) { Glyph("next", "Next ${tab.lowercase()}") }
-                                TextButton(onClick = { vm.date(LocalDate.now(ZoneId.of(s.zone))) }) { Text("Today") }
+                                IconButton(onClick = { vm.date(s.date.minusDays(if (tab == "Week") 7 else 1)) }) {
+                                    Glyph("back", stringResource(if (tab == "Week") R.string.previous_week else R.string.previous_day))
+                                }
+                                TextButton(onClick = { showDate = true }, modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text(s.date.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy", locale)))
+                                        if (s.loading) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    }
+                                }
+                                IconButton(onClick = { vm.date(s.date.plusDays(if (tab == "Week") 7 else 1)) }) {
+                                    Glyph("next", stringResource(if (tab == "Week") R.string.next_week else R.string.next_day))
+                                }
+                                TextButton(onClick = { vm.date(LocalDate.now(ZoneId.of(s.zone))) }) {
+                                    Text(stringResource(R.string.today))
+                                }
                             }
                             if (timetable.weekNames.size > 1) Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 timetable.weekNames.forEachIndexed { i, name -> FilterChip(s.cycleWeek == i, { vm.cycle(i) }, { Text(name) }) }
