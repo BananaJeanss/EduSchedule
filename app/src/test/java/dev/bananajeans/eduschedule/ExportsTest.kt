@@ -5,7 +5,7 @@ import java.time.*
 class ExportsTest {
     private val date = LocalDate.of(2026,9,14)
     private val headers = listOf("Date", "Start", "End", "Subject", "Room", "Teacher", "Class", "Group")
-    private const val description = "Published timetable; check EduPage for substitutions."
+    private val description = "Published timetable; check EduPage for substitutions."
     private fun lesson() = EduPageParser.parse(javaClass.getResource("/timetable.json")!!.readText(),Revision("226","Test",date)).lessons.first()
     @Test fun writesEscapedUtcEventsWithStableUids() {
         val events = listOf(DatedLesson(date,lesson()))
