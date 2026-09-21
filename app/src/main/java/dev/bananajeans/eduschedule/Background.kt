@@ -52,7 +52,8 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
                 preferences.home,
                 preferences.hiddenGroups,
                 preferences.cycleWeek,
-                zone
+                zone,
+                preferences.classReminderLeadMinutes
             )
             if (snapshot.offline) return Result.retry()
 
