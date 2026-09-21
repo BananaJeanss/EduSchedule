@@ -515,8 +515,18 @@ class MainActivity : ComponentActivity() {
     val today = date == now.toLocalDate()
     val current = if (today) blocks.firstOrNull { it.start != null && it.end != null && now.toLocalTime() >= it.start && now.toLocalTime() < it.end } else null
     val next = if (today) blocks.firstOrNull { it.start != null && it.start > now.toLocalTime() } else null
-    val emptyLines = listOf("Nothing on the board.", "No lessons today. Enjoy the gap.", "Clear schedule. Nice.", "No published lessons today.")
-    val doneLines = listOf("That’s your day.", "Done for today.", "You’re finished.", "Schedule cleared.")
+    val emptyLines = listOf(
+        R.string.empty_day_1,
+        R.string.empty_day_2,
+        R.string.empty_day_3,
+        R.string.empty_day_4
+    )
+    val doneLines = listOf(
+        R.string.done_day_1,
+        R.string.done_day_2,
+        R.string.done_day_3,
+        R.string.done_day_4
+    )
     val markerIndex = when {
         !today || blocks.isEmpty() -> -1
         current != null -> blocks.indexOf(current)
@@ -531,19 +541,28 @@ class MainActivity : ComponentActivity() {
                 Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         when {
-                            current != null -> "HAPPENING NOW"
-                            next != null -> "UP NEXT"
-                            blocks.isEmpty() -> "CLEAR SCHEDULE"
-                            today -> "ALL DONE"
+                            current != null -> stringResource(R.string.happening_now)
+                            next != null -> stringResource(R.string.up_next)
+                            blocks.isEmpty() -> stringResource(R.string.clear_schedule)
+                            today -> stringResource(R.string.all_done)
                             else -> date.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, locale).uppercase(locale)
                         },
                         style = MaterialTheme.typography.labelMedium
                     )
                     Text(
-                        focus?.let { if (it.isSplit && it.subjects.size > 1) "${it.lessons.size} group lessons" else it.title }
-                            ?: if (blocks.isEmpty()) emptyLines[date.dayOfYear % emptyLines.size]
-                            else if (today) doneLines[date.dayOfYear % doneLines.size]
-                            else "${blocks.size} ${if (blocks.size == 1) "lesson" else "lessons"}",
+                        focus?.let {
+                            if (it.isSplit && it.subjects.size > 1) {
+                                pluralStringResource(R.plurals.group_lessons, it.lessons.size, it.lessons.size)
+                            } else {
+                                it.title
+                            }
+                        } ?: if (blocks.isEmpty()) {
+                            stringResource(emptyLines[date.dayOfYear % emptyLines.size])
+                        } else if (today) {
+                            stringResource(doneLines[date.dayOfYear % doneLines.size])
+                        } else {
+                            pluralStringResource(R.plurals.lesson_count, blocks.size, blocks.size)
+                        },
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -551,7 +570,7 @@ class MainActivity : ComponentActivity() {
                         focus?.let { block ->
                             val rooms = block.lessons.map { it.roomNames }.filter(String::isNotBlank).distinct()
                             "${block.start ?: "?"}–${block.end ?: "?"}${if (rooms.isNotEmpty()) " · ${rooms.joinToString(" / ")}" else ""}"
-                        } ?: if (blocks.isEmpty()) "No published lessons for this selection."
+                        } ?: if (blocks.isEmpty()) stringResource(R.string.no_published_lessons_selection)
                         else "${blocks.first().start ?: "?"}–${blocks.last().end ?: "?"}",
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -567,7 +586,7 @@ class MainActivity : ComponentActivity() {
 
         item {
             Text(
-                "Published timetable · $revision\nDaily substitutions and holidays may differ.",
+                stringResource(R.string.published_timetable_footer, revision),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp)
@@ -580,7 +599,11 @@ class MainActivity : ComponentActivity() {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
         Surface(shape = RoundedCornerShape(999.dp), color = MaterialTheme.colorScheme.primaryContainer) {
-            Text("${time.format(DateTimeFormatter.ofPattern("HH:mm"))} now", Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelMedium)
+            Text(
+                stringResource(R.string.time_now, time.format(DateTimeFormatter.ofPattern("HH:mm"))),
+                Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.labelMedium
+            )
         }
         HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
     }
@@ -602,7 +625,11 @@ class MainActivity : ComponentActivity() {
                 Text(block.end?.toString() ?: "—", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("${block.lessons.size} groups", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(
+                    pluralStringResource(R.plurals.group_count, block.lessons.size, block.lessons.size),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
                 block.lessons.forEachIndexed { index, lesson ->
                     if (index > 0) HorizontalDivider()
                     Column(
@@ -648,6 +675,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 @Composable fun WeekScreen(s: ScheduleState, onLesson: (DatedLesson) -> Unit) {
+    val locale = LocalConfiguration.current.locales[0]
     val monday = s.date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
     // Wide, independently scrollable day columns keep real lesson names readable on phones.
     Row(Modifier.fillMaxSize().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -660,12 +688,21 @@ class MainActivity : ComponentActivity() {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(date.format(DateTimeFormatter.ofPattern("EEEE · d")), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    if (snapshot?.offline == true) Glyph("offline", "Using saved offline timetable")
+                    Text(
+                        date.format(DateTimeFormatter.ofPattern("EEEE · d", locale)),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    if (snapshot?.offline == true) {
+                        Glyph("offline", stringResource(R.string.using_saved_offline_timetable))
+                    }
                 }
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
-                    if (snapshot == null) item { Text(if (s.loading) "Loading…" else "Not available offline. Refresh to retry.") }
-                    else if (blocks.isEmpty()) item { Text("No published lessons", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    if (snapshot == null) item {
+                        Text(if (s.loading) stringResource(R.string.loading) else stringResource(R.string.not_available_offline))
+                    } else if (blocks.isEmpty()) item {
+                        Text(stringResource(R.string.no_published_lessons), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     items(blocks, key = { it.id }) { block -> LessonBlockCard(block) { onLesson(DatedLesson(date,it)) } }
                 }
             }
