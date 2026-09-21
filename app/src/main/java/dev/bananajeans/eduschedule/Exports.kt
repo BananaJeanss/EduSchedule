@@ -16,13 +16,13 @@ object Exports {
         title: String,
         lessons: List<DatedLesson>,
         zone: ZoneId,
-        now: Instant = Instant.now(),
-        description: String = "Published timetable; check EduPage for substitutions."
+        description: String,
+        now: Instant = Instant.now()
     ): String {
         val lines = mutableListOf(
             "BEGIN:VCALENDAR",
             "VERSION:2.0",
-            "PRODID:-//EduSchedule//Android//EN",
+            "PRODID:-//EduSchedule//Android//",
             "CALSCALE:GREGORIAN",
             "METHOD:PUBLISH",
             "X-WR-CALNAME:${escape(title)}"
@@ -47,10 +47,7 @@ object Exports {
         return lines.joinToString("\r\n", postfix = "\r\n") { fold(it) }
     }
 
-    fun csv(
-        lessons: List<DatedLesson>,
-        headers: List<String> = listOf("Date", "Start", "End", "Subject", "Room", "Teacher", "Class", "Group")
-    ): String {
+    fun csv(lessons: List<DatedLesson>, headers: List<String>): String {
         require(headers.size == 8) { "CSV export requires exactly eight headers." }
         return (listOf(headers) + lessons.map { (date, l) ->
             listOf(
