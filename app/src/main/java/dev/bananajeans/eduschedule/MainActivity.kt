@@ -79,6 +79,16 @@ class MainActivity : ComponentActivity() {
     if (s.host.isBlank()) { SetupScreen(vm, s.zone, s.language); return }
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
+    val exportSavedMessage = stringResource(R.string.export_saved)
+    val exportSaveFailedMessage = stringResource(R.string.export_save_failed)
+    val notificationsDisabledMessage = stringResource(R.string.notifications_disabled)
+    val allowInstallsMessage = stringResource(R.string.allow_installs)
+    val allowInstallsSettingsMessage = stringResource(R.string.allow_installs_settings)
+    val noAppForLinkMessage = stringResource(R.string.no_app_for_link)
+    val defaultClassSavedMessage = stringResource(R.string.default_class_saved)
+    val timetableLabel = stringResource(R.string.timetable)
+    val calendarEventDescription = stringResource(R.string.calendar_event_description)
+    val installCalendarOrExportMessage = stringResource(R.string.install_calendar_or_export)
     val scope = rememberCoroutineScope()
     var tab by rememberSaveable { mutableStateOf("Day") }
     var menu by remember { mutableStateOf(false) }
@@ -95,19 +105,19 @@ class MainActivity : ComponentActivity() {
                     context.contentResolver.openOutputStream(uri)?.use { it.write(pendingExport.toByteArray()) }
                         ?: error("Could not open the destination.")
                 }
-                vm.message(context.getString(R.string.export_saved))
+                vm.message(exportSavedMessage)
             } catch (_: Exception) {
-                vm.message(context.getString(R.string.export_save_failed))
+                vm.message(exportSaveFailedMessage)
             }
         }
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         vm.notifications(granted)
-        if (!granted) vm.message(context.getString(R.string.notifications_disabled))
+        if (!granted) vm.message(notificationsDisabledMessage)
     }
     val installPermission = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (context.packageManager.canRequestPackageInstalls()) vm.installUpdate()
-        else vm.message(context.getString(R.string.allow_installs))
+        else vm.message(allowInstallsMessage)
     }
     fun requestUpdateInstall() {
         if (context.packageManager.canRequestPackageInstalls()) {
@@ -122,7 +132,7 @@ class MainActivity : ComponentActivity() {
                 )
             )
         } catch (_: Exception) {
-            vm.message(context.getString(R.string.allow_installs_settings))
+            vm.message(allowInstallsSettingsMessage)
         }
     }
     fun open(url: String) {
@@ -137,7 +147,7 @@ class MainActivity : ComponentActivity() {
                 Intent(Intent.ACTION_VIEW, url.toUri()).addCategory(Intent.CATEGORY_BROWSABLE)
             )
         } catch (_: Exception) {
-            vm.message(context.getString(R.string.no_app_for_link))
+            vm.message(noAppForLinkMessage)
         }
     }
     LaunchedEffect(s.message) { s.message?.let { snack.showSnackbar(it); vm.message(null) } }
@@ -174,7 +184,7 @@ class MainActivity : ComponentActivity() {
                                 if (s.selection?.kind == ScheduleKind.CLASS) DropdownMenuItem(text = { Text(stringResource(R.string.make_this_my_class)) }, onClick = {
                                     vm.home(s.selection.id)
                                     menu = false
-                                    vm.message(context.getString(R.string.default_class_saved))
+                                    vm.message(defaultClassSavedMessage)
                                 })
                                 DropdownMenuItem(text = { Text(stringResource(R.string.export_week)) }, enabled = s.selection != null && s.week.isNotEmpty() && !s.loading, onClick = { menu = false; showExport = true })
                                 DropdownMenuItem(text = { Text(stringResource(R.string.open_school_timetable)) }, onClick = { menu = false; open("https://${s.host}/timetable/") })
@@ -298,7 +308,7 @@ class MainActivity : ComponentActivity() {
                 TextButton(enabled = s.week.size == 7, onClick = {
                     pendingExport = Exports.ics(
                         s.host,
-                        selectedName ?: context.getString(R.string.timetable),
+                        selectedName ?: timetableLabel,
                         vm.exportLessons(),
                         ZoneId.of(s.zone),
                         calendarDescription
@@ -370,14 +380,14 @@ class MainActivity : ComponentActivity() {
                         .putExtra(CalendarContract.Events.EVENT_LOCATION, l.roomNames)
                         .putExtra(
                             CalendarContract.Events.DESCRIPTION,
-                            "${l.teacherNames}\n${l.classNames} ${l.group}\n${context.getString(R.string.calendar_event_description)}"
+                            "${l.teacherNames}\n${l.classNames} ${l.group}\n$calendarEventDescription"
                         )
                         .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, Exports.instant(dated.date,l.start!!,ZoneId.of(s.zone)).toEpochMilli())
                         .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, Exports.instant(dated.date,l.end!!,ZoneId.of(s.zone)).toEpochMilli())
                     try {
                         context.startActivity(intent)
                     } catch (_: Exception) {
-                        vm.message(context.getString(R.string.install_calendar_or_export))
+                        vm.message(installCalendarOrExportMessage)
                     }
                 }) { Text(stringResource(R.string.add_to_calendar)) }
             }
@@ -387,6 +397,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable fun SetupScreen(vm: ScheduleViewModel, defaultZone: String, language: AppLanguage) {
     val context = LocalContext.current
+    val checkAddressTimezoneMessage = stringResource(R.string.check_address_timezone)
     var host by rememberSaveable { mutableStateOf("") }
     var zone by rememberSaveable { mutableStateOf(defaultZone) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
@@ -427,7 +438,7 @@ class MainActivity : ComponentActivity() {
                         error = null
                         vm.school(host, zone)
                     } catch (_: Exception) {
-                        error = context.getString(R.string.check_address_timezone)
+                        error = checkAddressTimezoneMessage
                     }
                 },
                 enabled = host.isNotBlank() && zone.isNotBlank(),
