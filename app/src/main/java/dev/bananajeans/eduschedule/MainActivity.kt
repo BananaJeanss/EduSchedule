@@ -1,6 +1,7 @@
 package dev.bananajeans.eduschedule
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -26,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -42,6 +45,11 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: Context) {
+        val language = Preferences(newBase).language
+        super.attachBaseContext(AppLocale.wrap(newBase, language))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState); enableEdgeToEdge()
         val openSettings = intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)
@@ -68,8 +76,9 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun ScheduleApp(vm: ScheduleViewModel, s: ScheduleState, openSettingsInitially: Boolean = false) {
-    if (s.host.isBlank()) { SetupScreen(vm, s.zone); return }
+    if (s.host.isBlank()) { SetupScreen(vm, s.zone, s.language); return }
     val context = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
     val scope = rememberCoroutineScope()
     var tab by rememberSaveable { mutableStateOf("Day") }
     var menu by remember { mutableStateOf(false) }
@@ -82,17 +91,23 @@ class MainActivity : ComponentActivity() {
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri ->
         if (uri != null) scope.launch {
             try {
-                withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)?.use { it.write(pendingExport.toByteArray()) } ?: error("Could not open the destination.") }
-                vm.message("Export saved.")
-            } catch (_: Exception) { vm.message("Couldn't save the export. Try another location.") }
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use { it.write(pendingExport.toByteArray()) }
+                        ?: error("Could not open the destination.")
+                }
+                vm.message(context.getString(R.string.export_saved))
+            } catch (_: Exception) {
+                vm.message(context.getString(R.string.export_save_failed))
+            }
         }
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        vm.notifications(granted); if (!granted) vm.message("Notifications are off. You can enable them in Android settings.")
+        vm.notifications(granted)
+        if (!granted) vm.message(context.getString(R.string.notifications_disabled))
     }
     val installPermission = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (context.packageManager.canRequestPackageInstalls()) vm.installUpdate()
-        else vm.message("Allow installs from EduSchedule to install updates in the app.")
+        else vm.message(context.getString(R.string.allow_installs))
     }
     fun requestUpdateInstall() {
         if (context.packageManager.canRequestPackageInstalls()) {
@@ -107,7 +122,7 @@ class MainActivity : ComponentActivity() {
                 )
             )
         } catch (_: Exception) {
-            vm.message("Open Android settings and allow installs from EduSchedule.")
+            vm.message(context.getString(R.string.allow_installs_settings))
         }
     }
     fun open(url: String) {
@@ -122,7 +137,7 @@ class MainActivity : ComponentActivity() {
                 Intent(Intent.ACTION_VIEW, url.toUri()).addCategory(Intent.CATEGORY_BROWSABLE)
             )
         } catch (_: Exception) {
-            vm.message("No app can open this link.")
+            vm.message(context.getString(R.string.no_app_for_link))
         }
     }
     LaunchedEffect(s.message) { s.message?.let { snack.showSnackbar(it); vm.message(null) } }
