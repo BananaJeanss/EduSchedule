@@ -709,24 +709,116 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-@Composable fun SettingsScreen(s: ScheduleState, vm: ScheduleViewModel, enableNotifications: () -> Unit, installUpdate: () -> Unit, open: (String) -> Unit) {
+@Composable fun SettingsScreen(
+    s: ScheduleState,
+    vm: ScheduleViewModel,
+    enableNotifications: () -> Unit,
+    installUpdate: () -> Unit,
+    open: (String) -> Unit
+) {
+    val context = LocalContext.current
     var host by remember(s.host) { mutableStateOf(s.host) }
     var zone by remember(s.zone) { mutableStateOf(s.zone) }
+
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { Text("Appearance", style = MaterialTheme.typography.titleLarge) }
-        item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("System", "Light", "Dark").forEach { FilterChip(s.theme == it, { vm.theme(it) }, { Text(it) }) } } }
-        item { SettingSwitch("Wallpaper colors", "Use your Android accent colors", s.dynamic, vm::dynamic) }
-        item { HorizontalDivider(); Spacer(Modifier.height(16.dp)); Text("Your school", style = MaterialTheme.typography.titleLarge) }
-        item { OutlinedTextField(host, { host = it }, label = { Text("EduPage address") }, singleLine = true, modifier = Modifier.fillMaxWidth()) }
-        item { OutlinedTextField(zone, { zone = it }, label = { Text("School time zone") }, supportingText = { Text("For example, Europe/Tallinn") }, singleLine = true, modifier = Modifier.fillMaxWidth()) }
-        item { FilledTonalButton(onClick = { vm.school(host,zone) }, enabled = host != s.host || zone != s.zone) { Text("Save school") } }
-        item { HorizontalDivider(); Spacer(Modifier.height(16.dp)); Text("Notifications", style = MaterialTheme.typography.titleLarge) }
-        item { SettingSwitch("Class reminders", "Notify for your saved class. Alerts include Mute 1h and Mute today; timetable-change and app-update alerts are included too. Android may delay background work.", s.notifications) { if (it) enableNotifications() else vm.notifications(false) } }
+        item { Text(stringResource(R.string.appearance), style = MaterialTheme.typography.titleLarge) }
+        item {
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf(
+                    "System" to R.string.theme_system,
+                    "Light" to R.string.theme_light,
+                    "Dark" to R.string.theme_dark
+                ).forEach { (value, label) ->
+                    FilterChip(
+                        selected = s.theme == value,
+                        onClick = { vm.theme(value) },
+                        label = { Text(stringResource(label)) }
+                    )
+                }
+            }
+        }
+        item {
+            SettingSwitch(
+                stringResource(R.string.wallpaper_colors),
+                stringResource(R.string.wallpaper_colors_description),
+                s.dynamic,
+                vm::dynamic
+            )
+        }
+        item {
+            Text(stringResource(R.string.language), style = MaterialTheme.typography.titleMedium)
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()).padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                AppLanguage.entries.forEach { option ->
+                    FilterChip(
+                        selected = s.language == option,
+                        onClick = {
+                            if (s.language != option) {
+                                vm.language(option)
+                                context.findActivity()?.recreate()
+                            }
+                        },
+                        label = { Text(stringResource(option.labelResource())) }
+                    )
+                }
+            }
+        }
+
+        item {
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
+            Text(stringResource(R.string.your_school), style = MaterialTheme.typography.titleLarge)
+        }
+        item {
+            OutlinedTextField(
+                host,
+                { host = it },
+                label = { Text(stringResource(R.string.edupage_address)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        item {
+            OutlinedTextField(
+                zone,
+                { zone = it },
+                label = { Text(stringResource(R.string.school_time_zone)) },
+                supportingText = { Text(stringResource(R.string.timezone_example)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        item {
+            FilledTonalButton(
+                onClick = { vm.school(host, zone) },
+                enabled = host != s.host || zone != s.zone
+            ) { Text(stringResource(R.string.save_school)) }
+        }
+
+        item {
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
+            Text(stringResource(R.string.notifications), style = MaterialTheme.typography.titleLarge)
+        }
+        item {
+            SettingSwitch(
+                stringResource(R.string.class_reminders),
+                stringResource(R.string.class_reminders_description),
+                s.notifications
+            ) {
+                if (it) enableNotifications() else vm.notifications(false)
+            }
+        }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Early reminder", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.early_reminder), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Choose how long before class to get a heads-up. The start-time alert still fires separately.",
+                    stringResource(R.string.early_reminder_description),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -738,19 +830,33 @@ class MainActivity : ComponentActivity() {
                         FilterChip(
                             selected = s.classReminderLeadMinutes == minutes,
                             onClick = { vm.classReminderLeadMinutes(minutes) },
-                            label = { Text(if (minutes == 0) "Off" else "$minutes min") },
+                            label = {
+                                Text(
+                                    if (minutes == 0) stringResource(R.string.off)
+                                    else stringResource(R.string.minutes_short, minutes)
+                                )
+                            },
                             enabled = s.notifications
                         )
                     }
                 }
             }
         }
-        item { Spacer(Modifier.height(8.dp)); Text("Updates", style = MaterialTheme.typography.titleLarge) }
+
+        item {
+            Spacer(Modifier.height(8.dp))
+            Text(stringResource(R.string.updates), style = MaterialTheme.typography.titleLarge)
+        }
         item {
             OutlinedButton(
                 onClick = { vm.updates() },
                 enabled = !s.updateChecking && !s.updateDownloading
-            ) { Text(if (s.updateChecking) "Checking…" else "Check for app updates") }
+            ) {
+                Text(
+                    if (s.updateChecking) stringResource(R.string.checking)
+                    else stringResource(R.string.check_for_updates)
+                )
+            }
         }
         s.release?.let { release ->
             item {
@@ -759,20 +865,28 @@ class MainActivity : ComponentActivity() {
                         Modifier.fillMaxWidth().padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text("EduSchedule ${release.version}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         Text(
-                            if (s.updateDownloading) "Downloading and verifying the signed APK…"
-                            else "Download the verified APK here. Android will ask you to confirm the update.",
+                            "${stringResource(R.string.app_name)} ${release.version}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            if (s.updateDownloading) stringResource(R.string.downloading_verifying)
+                            else stringResource(R.string.download_update_description),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         if (s.updateDownloading) {
                             val progress = s.updateProgress
-                            if (progress == null) LinearProgressIndicator(Modifier.fillMaxWidth())
-                            else {
-                                LinearProgressIndicator(progress = { progress / 100f }, modifier = Modifier.fillMaxWidth())
+                            if (progress == null) {
+                                LinearProgressIndicator(Modifier.fillMaxWidth())
+                            } else {
+                                LinearProgressIndicator(
+                                    progress = { progress / 100f },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                                 Text(
-                                    if (progress < 100) "$progress%" else "Verifying…",
+                                    if (progress < 100) "$progress%" else stringResource(R.string.verifying),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -783,20 +897,53 @@ class MainActivity : ComponentActivity() {
                             enabled = !s.updateDownloading,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(if (s.updateDownloading) "Preparing update…" else "Download & install")
+                            Text(
+                                if (s.updateDownloading) stringResource(R.string.preparing_update)
+                                else stringResource(R.string.download_install)
+                            )
                         }
                     }
                 }
             }
         }
+
         val groups = s.snapshot?.timetable?.groups?.get(s.selection?.id).orEmpty()
         if (s.selection?.kind == ScheduleKind.CLASS && groups.isNotEmpty()) {
-            item { HorizontalDivider(); Spacer(Modifier.height(16.dp)); Text("Visible groups", style = MaterialTheme.typography.titleLarge); Text("Hide groups you don't attend. Whole-class lessons stay visible.", style = MaterialTheme.typography.bodyMedium) }
-            items(groups, key = { it.id }) { group -> SettingSwitch(group.name, "", group.id !in s.hidden) { enabled -> vm.groups(if (enabled) s.hidden - group.id else s.hidden + group.id) } }
+            item {
+                HorizontalDivider()
+                Spacer(Modifier.height(16.dp))
+                Text(stringResource(R.string.visible_groups), style = MaterialTheme.typography.titleLarge)
+                Text(
+                    stringResource(R.string.visible_groups_description),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            items(groups, key = { it.id }) { group ->
+                SettingSwitch(group.name, "", group.id !in s.hidden) { enabled ->
+                    vm.groups(if (enabled) s.hidden - group.id else s.hidden + group.id)
+                }
+            }
         }
-        item { HorizontalDivider(); Text("EduSchedule ${BuildConfig.VERSION_NAME}", Modifier.padding(top = 16.dp), style = MaterialTheme.typography.titleMedium)
-            Text("Independent reader for public EduPage timetables. No account, ads, or analytics. Timetables are stored on this device. Regular schedules may not include substitutions or holidays.", Modifier.padding(top = 8.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        item { TextButton(onClick = { open("https://github.com/${Updates.REPOSITORY}") }) { Text("Source, help & privacy") } }
+
+        item {
+            HorizontalDivider()
+            Text(
+                "${stringResource(R.string.app_name)} ${BuildConfig.VERSION_NAME}",
+                Modifier.padding(top = 16.dp),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                stringResource(R.string.about_description),
+                Modifier.padding(top = 8.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        item {
+            TextButton(onClick = { open("https://github.com/${Updates.REPOSITORY}") }) {
+                Text(stringResource(R.string.source_help_privacy))
+            }
+        }
     }
 }
 @Composable fun SettingSwitch(title: String, subtitle: String, checked: Boolean, change: (Boolean) -> Unit) {
