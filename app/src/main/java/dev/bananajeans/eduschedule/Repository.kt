@@ -36,6 +36,9 @@ class Preferences(context: Context) {
     var notifications: Boolean
         get() = prefs.getBoolean("notifications", false)
         set(value) { prefs.edit { putBoolean("notifications", value) } }
+    var classReminderLeadMinutes: Int
+        get() = prefs.getInt("classReminderLeadMinutes", 10).coerceIn(0, 60)
+        set(value) { prefs.edit { putInt("classReminderLeadMinutes", value.coerceIn(0, 60)) } }
     var cycleWeek: Int
         get() = prefs.getInt("cycleWeek", 0)
         set(value) { prefs.edit { putInt("cycleWeek", value.coerceAtLeast(0)) } }
