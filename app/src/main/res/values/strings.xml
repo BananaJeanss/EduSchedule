@@ -33,6 +33,14 @@
     <string name="calendar_ics">Calendar (.ics)</string>
     <string name="spreadsheet_csv">Spreadsheet (.csv)</string>
     <string name="timetable">Timetable</string>
+    <string name="csv_date">Date</string>
+    <string name="csv_start">Start</string>
+    <string name="csv_end">End</string>
+    <string name="csv_subject">Subject</string>
+    <string name="csv_room">Room</string>
+    <string name="csv_teacher">Teacher</string>
+    <string name="csv_class">Class</string>
+    <string name="csv_group">Group</string>
     <string name="calendar_event_description">Published timetable; check EduPage for substitutions.</string>
     <string name="install_calendar_or_export">Install a calendar app, or export the week as .ics.</string>
     <string name="add_to_calendar">Add to calendar</string>
