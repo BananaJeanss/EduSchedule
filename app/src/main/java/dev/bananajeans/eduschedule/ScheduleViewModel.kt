@@ -212,8 +212,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
                 scheduleReminders()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
+            } catch (_: Exception) {
                 mutable.update { it.copy(error = localized(R.string.timetable_load_failed)) }
             } finally {
                 mutable.update { it.copy(loading = false) }
