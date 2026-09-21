@@ -28,4 +28,8 @@ Debug builds have a separate application ID and are available from Android CI ar
 
 ## Release review
 
-Check real-device light/dark/dynamic colors, gesture and three-button navigation, rotation and large font sizes. Verify school/class selection, split groups, week/date transitions, offline restart, calendar insertion, .ics import in Google Calendar, denied notifications, denied/allowed unknown-app install access, update download/verification, Android install confirmation, and update cancellation. Check the regular-timetable limitation text. An APK that compiles is not proof these device behaviors passed.
+Check real-device light/dark/dynamic colors, gesture and three-button navigation, rotation and large font sizes. Verify school/class selection, split groups, week/date transitions, offline restart, calendar insertion, .ics import in Google Calendar, denied notifications, denied/allowed unknown-app install access, update download/verification, Android install confirmation, and update cancellation. Check the regular-timetable limitation text.
+
+For localization changes, test English, Estonian and System default from both first-run setup and Settings. Confirm the activity recreates into the selected locale; weekday/month names, notifications, reminder actions, calendar descriptions and CSV headers follow it; and source-provided timetable names remain unchanged. Unit tests enforce translation-key and format-placeholder parity, but device review is still required for truncation and layout regressions.
+
+An APK that compiles is not proof these device behaviors passed.
