@@ -301,7 +301,7 @@ class MainActivity : ComponentActivity() {
                         selectedName ?: context.getString(R.string.timetable),
                         vm.exportLessons(),
                         ZoneId.of(s.zone),
-                        description = calendarDescription
+                        calendarDescription
                     )
                     export.launch("EduSchedule-${s.date}.ics")
                     showExport = false
