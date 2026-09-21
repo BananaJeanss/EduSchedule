@@ -44,6 +44,13 @@ fun Context.findActivity(): Activity? = when (this) {
 }
 
 @StringRes
+fun AppLanguage.labelResource(): Int = when (this) {
+    AppLanguage.SYSTEM -> R.string.language_system
+    AppLanguage.ENGLISH -> R.string.language_english
+    AppLanguage.ESTONIAN -> R.string.language_estonian
+}
+
+@StringRes
 fun ScheduleKind.pluralLabelResource(): Int = when (this) {
     ScheduleKind.CLASS -> R.string.schedule_kind_classes
     ScheduleKind.TEACHER -> R.string.schedule_kind_teachers
