@@ -68,8 +68,8 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
             val previous = state.getString(key, null)
             if (previous != null && previous != signature) {
                 notify(
-                    "Timetable updated",
-                    "Your saved class has a new timetable. Tap to check what changed.",
+                    AppLocale.string(applicationContext, preferences.language, R.string.timetable_updated),
+                    AppLocale.string(applicationContext, preferences.language, R.string.timetable_updated_body),
                     1
                 )
             }
@@ -80,9 +80,10 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
                     val release = Updates.check()
                     if (release != null && state.getString("notifiedRelease", "") != release.version) {
                         notify(
-                            "EduSchedule \${release.version}",
-                            "An update is available. Open Settings to view the release.",
-                            2
+                            "${AppLocale.string(applicationContext, preferences.language, R.string.app_name)} ${release.version}",
+                            AppLocale.string(applicationContext, preferences.language, R.string.app_update_available),
+                            2,
+                            openUpdates = true
                         )
                         state.edit { putString("notifiedRelease", release.version) }
                     }
@@ -107,7 +108,11 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
         val channel = "timetable_changes"
         applicationContext.getSystemService(NotificationManager::class.java)
             .createNotificationChannel(
-                NotificationChannel(channel, "Timetable and app updates", NotificationManager.IMPORTANCE_DEFAULT)
+                NotificationChannel(
+                    channel,
+                    AppLocale.string(applicationContext, Preferences(applicationContext).language, R.string.timetable_updates_channel),
+                    NotificationManager.IMPORTANCE_DEFAULT
+                )
             )
         val intent = Intent()
             .setClass(applicationContext, MainActivity::class.java)
