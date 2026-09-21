@@ -280,26 +280,29 @@ class InstallResultActivity : ComponentActivity() {
             PackageInstaller.STATUS_PENDING_USER_ACTION -> {
                 val confirmation = confirmationIntent(result)
                 if (confirmation == null) {
-                    Toast.makeText(this, "Android could not open the update confirmation.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, localized(R.string.update_confirmation_failed), Toast.LENGTH_LONG).show()
                 } else {
                     runCatching { startActivity(confirmation) }.onFailure {
-                        Toast.makeText(this, "Android could not open the update confirmation.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, localized(R.string.update_confirmation_failed), Toast.LENGTH_LONG).show()
                     }
                 }
             }
             PackageInstaller.STATUS_SUCCESS ->
-                Toast.makeText(this, "EduSchedule updated.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, localized(R.string.update_installed), Toast.LENGTH_SHORT).show()
             PackageInstaller.STATUS_FAILURE_ABORTED ->
-                Toast.makeText(this, "Update cancelled.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, localized(R.string.update_cancelled), Toast.LENGTH_SHORT).show()
             else -> {
                 val message = result.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
                     ?.takeIf(String::isNotBlank)
-                    ?: "Android could not install the update."
+                    ?: localized(R.string.update_install_failed)
                 Toast.makeText(this, message, Toast.LENGTH_LONG).show()
             }
         }
         finish()
     }
+
+    private fun localized(resource: Int): String =
+        AppLocale.string(this, Preferences(this).language, resource)
 
     @Suppress("DEPRECATION")
     private fun confirmationIntent(source: Intent): Intent? =
