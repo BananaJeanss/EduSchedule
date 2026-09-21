@@ -305,12 +305,23 @@ class InstallResultActivity : ComponentActivity() {
         AppLocale.string(this, Preferences(this).language, resource)
 
     @Suppress("DEPRECATION")
-    private fun confirmationIntent(source: Intent): Intent? =
-        if (Build.VERSION.SDK_INT >= 33) {
+    private fun confirmationIntent(source: Intent): Intent? {
+        val confirmation = if (Build.VERSION.SDK_INT >= 33) {
             source.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
         } else {
             source.getParcelableExtra(Intent.EXTRA_INTENT)
         }
+
+        // PackageInstaller supplies the system confirmation UI as a nested intent. Android 16+
+        // protects nested-intent launches by default, which can otherwise turn a successful
+        // download/session commit into a notification with no installer dialog. This activity is
+        // non-exported and is only reached through our PackageInstaller status PendingIntent, so
+        // this is a narrow, trusted use of the platform opt-out.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+            confirmation?.removeLaunchSecurityProtection()
+        }
+        return confirmation
+    }
 
     companion object {
         const val EXTRA_VERSION = "update_version"
