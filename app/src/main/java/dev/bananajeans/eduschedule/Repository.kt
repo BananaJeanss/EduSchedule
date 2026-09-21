@@ -15,7 +15,7 @@ import javax.net.ssl.HttpsURLConnection
 import java.net.URI
 import java.time.*
 
-data class Snapshot(val timetable: Timetable, val fetched: Instant, val offline: Boolean, val warning: String? = null)
+data class Snapshot(val timetable: Timetable, val fetched: Instant, val offline: Boolean)
 class Preferences(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     var host: String
@@ -39,6 +39,9 @@ class Preferences(context: Context) {
     var classReminderLeadMinutes: Int
         get() = prefs.getInt("classReminderLeadMinutes", 10).coerceIn(0, 60)
         set(value) { prefs.edit { putInt("classReminderLeadMinutes", value.coerceIn(0, 60)) } }
+    var language: AppLanguage
+        get() = AppLanguage.fromPreference(prefs.getString("language", AppLanguage.SYSTEM.preferenceValue))
+        set(value) { prefs.edit { putString("language", value.preferenceValue) } }
     var cycleWeek: Int
         get() = prefs.getInt("cycleWeek", 0)
         set(value) { prefs.edit { putInt("cycleWeek", value.coerceAtLeast(0)) } }
@@ -139,8 +142,7 @@ class Repository(context: Context) {
                 } catch (e: Exception) { if (data == null) throw e; offline = true }
             }
             val timetable = EduPageParser.parse(data!!.getString("raw"), revision)
-            Snapshot(timetable, Instant.parse(data.getString("fetched")), offline,
-                if (offline) "Offline · showing saved timetable" else null)
+            Snapshot(timetable, Instant.parse(data.getString("fetched")), offline)
         }
     }
     companion object {

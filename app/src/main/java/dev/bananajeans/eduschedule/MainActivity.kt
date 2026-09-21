@@ -1,6 +1,7 @@
 package dev.bananajeans.eduschedule
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -26,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -42,6 +45,11 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: Context) {
+        val language = Preferences(newBase).language
+        super.attachBaseContext(AppLocale.wrap(newBase, language))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState); enableEdgeToEdge()
         val openSettings = intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)
@@ -68,8 +76,19 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun ScheduleApp(vm: ScheduleViewModel, s: ScheduleState, openSettingsInitially: Boolean = false) {
-    if (s.host.isBlank()) { SetupScreen(vm, s.zone); return }
+    if (s.host.isBlank()) { SetupScreen(vm, s.zone, s.language); return }
     val context = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    val exportSavedMessage = stringResource(R.string.export_saved)
+    val exportSaveFailedMessage = stringResource(R.string.export_save_failed)
+    val notificationsDisabledMessage = stringResource(R.string.notifications_disabled)
+    val allowInstallsMessage = stringResource(R.string.allow_installs)
+    val allowInstallsSettingsMessage = stringResource(R.string.allow_installs_settings)
+    val noAppForLinkMessage = stringResource(R.string.no_app_for_link)
+    val defaultClassSavedMessage = stringResource(R.string.default_class_saved)
+    val timetableLabel = stringResource(R.string.timetable)
+    val calendarEventDescription = stringResource(R.string.calendar_event_description)
+    val installCalendarOrExportMessage = stringResource(R.string.install_calendar_or_export)
     val scope = rememberCoroutineScope()
     var tab by rememberSaveable { mutableStateOf("Day") }
     var menu by remember { mutableStateOf(false) }
@@ -82,17 +101,23 @@ class MainActivity : ComponentActivity() {
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri ->
         if (uri != null) scope.launch {
             try {
-                withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)?.use { it.write(pendingExport.toByteArray()) } ?: error("Could not open the destination.") }
-                vm.message("Export saved.")
-            } catch (_: Exception) { vm.message("Couldn't save the export. Try another location.") }
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use { it.write(pendingExport.toByteArray()) }
+                        ?: error("Could not open the destination.")
+                }
+                vm.message(exportSavedMessage)
+            } catch (_: Exception) {
+                vm.message(exportSaveFailedMessage)
+            }
         }
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        vm.notifications(granted); if (!granted) vm.message("Notifications are off. You can enable them in Android settings.")
+        vm.notifications(granted)
+        if (!granted) vm.message(notificationsDisabledMessage)
     }
     val installPermission = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (context.packageManager.canRequestPackageInstalls()) vm.installUpdate()
-        else vm.message("Allow installs from EduSchedule to install updates in the app.")
+        else vm.message(allowInstallsMessage)
     }
     fun requestUpdateInstall() {
         if (context.packageManager.canRequestPackageInstalls()) {
@@ -107,7 +132,7 @@ class MainActivity : ComponentActivity() {
                 )
             )
         } catch (_: Exception) {
-            vm.message("Open Android settings and allow installs from EduSchedule.")
+            vm.message(allowInstallsSettingsMessage)
         }
     }
     fun open(url: String) {
@@ -122,7 +147,7 @@ class MainActivity : ComponentActivity() {
                 Intent(Intent.ACTION_VIEW, url.toUri()).addCategory(Intent.CATEGORY_BROWSABLE)
             )
         } catch (_: Exception) {
-            vm.message("No app can open this link.")
+            vm.message(noAppForLinkMessage)
         }
     }
     LaunchedEffect(s.message) { s.message?.let { snack.showSnackbar(it); vm.message(null) } }
@@ -133,21 +158,37 @@ class MainActivity : ComponentActivity() {
         snackbarHost = { SnackbarHost(snack) },
         topBar = {
             TopAppBar(title = { Column {
-                Text(if (settings) "Settings" else selectedName ?: "Your timetable", fontWeight = FontWeight.SemiBold)
+                Text(
+                    if (settings) stringResource(R.string.settings) else selectedName ?: stringResource(R.string.your_timetable),
+                    fontWeight = FontWeight.SemiBold
+                )
                 if (!settings) Text(s.host.substringBefore('.'), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            } }, navigationIcon = { if (settings) IconButton(onClick = { settings = false }) { Glyph("back", "Back") } },
+            } }, navigationIcon = {
+                if (settings) IconButton(onClick = { settings = false }) {
+                    Glyph("back", stringResource(R.string.back))
+                }
+            },
                 actions = {
                     if (!settings) {
-                        IconButton(onClick = { vm.refresh(true) }, enabled = !s.loading) { if (s.loading) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) else Glyph("refresh", "Refresh timetable") }
+                        IconButton(onClick = { vm.refresh(true) }, enabled = !s.loading) {
+                            if (s.loading) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                            else Glyph("refresh", stringResource(R.string.refresh_timetable))
+                        }
                         Box {
-                            IconButton(onClick = { menu = true }) { Glyph("more", "More options") }
+                            IconButton(onClick = { menu = true }) {
+                                Glyph("more", stringResource(R.string.more_options))
+                            }
                             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                                DropdownMenuItem(text = { Text("Choose schedule") }, onClick = { menu = false; tab = "Browse" })
-                                if (s.home.isNotBlank()) DropdownMenuItem(text = { Text("My class") }, onClick = { vm.select(Selection(ScheduleKind.CLASS,s.home)); menu = false; tab = "Day" })
-                                if (s.selection?.kind == ScheduleKind.CLASS) DropdownMenuItem(text = { Text("Make this my class") }, onClick = { vm.home(s.selection.id); menu = false; vm.message("Default class saved.") })
-                                DropdownMenuItem(text = { Text("Export week") }, enabled = s.selection != null && s.week.isNotEmpty() && !s.loading, onClick = { menu = false; showExport = true })
-                                DropdownMenuItem(text = { Text("Open school timetable") }, onClick = { menu = false; open("https://${s.host}/timetable/") })
-                                DropdownMenuItem(text = { Text("Settings") }, onClick = { menu = false; settings = true })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.choose_schedule)) }, onClick = { menu = false; tab = "Browse" })
+                                if (s.home.isNotBlank()) DropdownMenuItem(text = { Text(stringResource(R.string.my_class)) }, onClick = { vm.select(Selection(ScheduleKind.CLASS,s.home)); menu = false; tab = "Day" })
+                                if (s.selection?.kind == ScheduleKind.CLASS) DropdownMenuItem(text = { Text(stringResource(R.string.make_this_my_class)) }, onClick = {
+                                    vm.home(s.selection.id)
+                                    menu = false
+                                    vm.message(defaultClassSavedMessage)
+                                })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.export_week)) }, enabled = s.selection != null && s.week.isNotEmpty() && !s.loading, onClick = { menu = false; showExport = true })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.open_school_timetable)) }, onClick = { menu = false; open("https://${s.host}/timetable/") })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.settings)) }, onClick = { menu = false; settings = true })
                             }
                         }
                     }
@@ -155,8 +196,17 @@ class MainActivity : ComponentActivity() {
         },
         bottomBar = {
             if (!settings) NavigationBar {
-                listOf("Day" to "day", "Week" to "week", "Browse" to "browse").forEach { (label, icon) ->
-                    NavigationBarItem(selected = tab == label, onClick = { tab = label }, icon = { Glyph(icon) }, label = { Text(label) })
+                listOf(
+                    Triple("Day", "day", R.string.day),
+                    Triple("Week", "week", R.string.week),
+                    Triple("Browse", "browse", R.string.browse)
+                ).forEach { (key, icon, label) ->
+                    NavigationBarItem(
+                        selected = tab == key,
+                        onClick = { tab = key },
+                        icon = { Glyph(icon) },
+                        label = { Text(stringResource(label)) }
+                    )
                 }
             }
         }
@@ -167,7 +217,11 @@ class MainActivity : ComponentActivity() {
                     permission.launch(Manifest.permission.POST_NOTIFICATIONS) else vm.notifications(true)
             }, ::requestUpdateInstall, ::open)
             else Column {
-                if (s.error != null) EmptyState("Couldn't load this date", s.error, "Retry") { vm.refresh(true) }
+                if (s.error != null) EmptyState(
+                    stringResource(R.string.couldnt_load_date),
+                    s.error,
+                    stringResource(R.string.retry)
+                ) { vm.refresh(true) }
                 else if (timetable == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 else {
                     if (s.snapshot.offline) Surface(color = MaterialTheme.colorScheme.tertiaryContainer) {
@@ -176,9 +230,13 @@ class MainActivity : ComponentActivity() {
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Glyph("offline", "Using saved offline timetable")
+                            Glyph("offline", stringResource(R.string.using_saved_offline_timetable))
                             Text(
-                                "Offline · saved ${s.snapshot.fetched.atZone(ZoneId.of(s.zone)).format(DateTimeFormatter.ofPattern("d MMM, HH:mm"))}",
+                                stringResource(
+                                    R.string.offline_saved_at,
+                                    s.snapshot.fetched.atZone(ZoneId.of(s.zone))
+                                        .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", locale))
+                                ),
                                 style = MaterialTheme.typography.labelMedium
                             )
                         }
@@ -187,10 +245,21 @@ class MainActivity : ComponentActivity() {
                         tab == "Browse" || s.selection == null -> BrowseScreen(timetable, s.selection, s.home, { vm.select(it); if (s.home.isBlank() && it.kind == ScheduleKind.CLASS) vm.home(it.id); tab = "Day" })
                         else -> {
                             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = { vm.date(s.date.minusDays(if (tab == "Week") 7 else 1)) }) { Glyph("back", "Previous ${tab.lowercase()}") }
-                                TextButton(onClick = { showDate = true }, modifier = Modifier.weight(1f)) { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { Text(s.date.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy"))); if (s.loading) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) } }
-                                IconButton(onClick = { vm.date(s.date.plusDays(if (tab == "Week") 7 else 1)) }) { Glyph("next", "Next ${tab.lowercase()}") }
-                                TextButton(onClick = { vm.date(LocalDate.now(ZoneId.of(s.zone))) }) { Text("Today") }
+                                IconButton(onClick = { vm.date(s.date.minusDays(if (tab == "Week") 7 else 1)) }) {
+                                    Glyph("back", stringResource(if (tab == "Week") R.string.previous_week else R.string.previous_day))
+                                }
+                                TextButton(onClick = { showDate = true }, modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text(s.date.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy", locale)))
+                                        if (s.loading) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    }
+                                }
+                                IconButton(onClick = { vm.date(s.date.plusDays(if (tab == "Week") 7 else 1)) }) {
+                                    Glyph("next", stringResource(if (tab == "Week") R.string.next_week else R.string.next_day))
+                                }
+                                TextButton(onClick = { vm.date(LocalDate.now(ZoneId.of(s.zone))) }) {
+                                    Text(stringResource(R.string.today))
+                                }
                             }
                             if (timetable.weekNames.size > 1) Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 timetable.weekNames.forEachIndexed { i, name -> FilterChip(s.cycleWeek == i, { vm.cycle(i) }, { Text(name) }) }
@@ -208,39 +277,86 @@ class MainActivity : ComponentActivity() {
         val picker = rememberDatePickerState(initialSelectedDateMillis = s.date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
         DatePickerDialog(onDismissRequest = { showDate = false }, confirmButton = { TextButton(onClick = {
             picker.selectedDateMillis?.let { vm.date(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }; showDate = false
-        }) { Text("Go") } }, dismissButton = { TextButton(onClick = { showDate = false }) { Text("Cancel") } }) { DatePicker(picker) }
+        }) { Text(stringResource(R.string.go)) } }, dismissButton = {
+            TextButton(onClick = { showDate = false }) { Text(stringResource(R.string.cancel)) }
+        }) { DatePicker(picker) }
     }
-    if (showExport) AlertDialog(onDismissRequest = { showExport = false }, title = { Text("Export this week") },
-        text = { Text("A dated snapshot of the visible lessons. Google Calendar can import the .ics file on the web. Exports do not update automatically. ${if (s.week.size < 7) "Some dates couldn't be loaded; refresh before exporting." else ""}") },
-        confirmButton = { TextButton(enabled = s.week.size == 7, onClick = {
-            pendingExport = Exports.ics(s.host, selectedName ?: "Timetable", vm.exportLessons(), ZoneId.of(s.zone)); export.launch("EduSchedule-${s.date}.ics"); showExport = false
-        }) { Text("Calendar (.ics)") } },
-        dismissButton = { TextButton(enabled = s.week.size == 7, onClick = { pendingExport = Exports.csv(vm.exportLessons()); export.launch("EduSchedule-${s.date}.csv"); showExport = false }) { Text("Spreadsheet (.csv)") } })
+    if (showExport) {
+        val exportDescription = buildString {
+            append(stringResource(R.string.export_description))
+            if (s.week.size < 7) {
+                append(" ")
+                append(stringResource(R.string.export_partial_warning))
+            }
+        }
+        val calendarDescription = stringResource(R.string.calendar_event_description)
+        val csvHeaders = listOf(
+            stringResource(R.string.csv_date),
+            stringResource(R.string.csv_start),
+            stringResource(R.string.csv_end),
+            stringResource(R.string.csv_subject),
+            stringResource(R.string.csv_room),
+            stringResource(R.string.csv_teacher),
+            stringResource(R.string.csv_class),
+            stringResource(R.string.csv_group)
+        )
+        AlertDialog(
+            onDismissRequest = { showExport = false },
+            title = { Text(stringResource(R.string.export_this_week)) },
+            text = { Text(exportDescription) },
+            confirmButton = {
+                TextButton(enabled = s.week.size == 7, onClick = {
+                    pendingExport = Exports.ics(
+                        s.host,
+                        selectedName ?: timetableLabel,
+                        vm.exportLessons(),
+                        ZoneId.of(s.zone),
+                        calendarDescription
+                    )
+                    export.launch("EduSchedule-${s.date}.ics")
+                    showExport = false
+                }) { Text(stringResource(R.string.calendar_ics)) }
+            },
+            dismissButton = {
+                TextButton(enabled = s.week.size == 7, onClick = {
+                    pendingExport = Exports.csv(vm.exportLessons(), csvHeaders)
+                    export.launch("EduSchedule-${s.date}.csv")
+                    showExport = false
+                }) { Text(stringResource(R.string.spreadsheet_csv)) }
+            }
+        )
+    }
     detail?.let { dated ->
         val l = dated.lesson
         val links = timetable?.linkedSchedules(l).orEmpty()
         ModalBottomSheet(onDismissRequest = { detail = null }) {
             Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(l.subject, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
-                Text("${dated.date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM"))} · ${l.start ?: "?"}–${l.end ?: "?"}", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "${dated.date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", locale))} · ${l.start ?: "?"}–${l.end ?: "?"}",
+                    style = MaterialTheme.typography.titleMedium
+                )
 
                 listOf(
                     ScheduleKind.ROOM to l.roomNames,
                     ScheduleKind.TEACHER to l.teacherNames,
                     ScheduleKind.CLASS to l.classNames
                 ).forEach { (kind, fallback) ->
-                    val label = when (kind) {
-                        ScheduleKind.ROOM -> "Room"
-                        ScheduleKind.TEACHER -> "Teacher"
-                        ScheduleKind.CLASS -> "Class"
-                    }
+                    val label = stringResource(kind.singularLabelResource())
+                    val openDescription = stringResource(
+                        when (kind) {
+                            ScheduleKind.ROOM -> R.string.open_room_schedule
+                            ScheduleKind.TEACHER -> R.string.open_teacher_schedule
+                            ScheduleKind.CLASS -> R.string.open_class_schedule
+                        }
+                    )
                     val entityLinks = links.filter { it.kind == kind }
                     if (entityLinks.isNotEmpty()) {
                         entityLinks.forEach { link ->
                             ListItem(
                                 overlineContent = { Text(label) },
                                 headlineContent = { Text(link.entity.name, fontWeight = FontWeight.Medium) },
-                                trailingContent = { Glyph("next", "Open $label schedule") },
+                                trailingContent = { Glyph("next", openDescription) },
                                 modifier = Modifier.fillMaxWidth().clickable {
                                     detail = null
                                     vm.date(dated.date)
@@ -254,23 +370,34 @@ class MainActivity : ComponentActivity() {
                         Text("$label · $fallback", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
-                if (l.group.isNotBlank()) Text("Group · ${l.group}", style = MaterialTheme.typography.bodyLarge)
+                if (l.group.isNotBlank()) {
+                    Text("${stringResource(R.string.group)} · ${l.group}", style = MaterialTheme.typography.bodyLarge)
+                }
 
                 Button(enabled = l.start != null && l.end != null, modifier = Modifier.fillMaxWidth(), onClick = {
                     val intent = Intent(Intent.ACTION_INSERT).setData(CalendarContract.Events.CONTENT_URI)
                         .putExtra(CalendarContract.Events.TITLE, l.subject)
                         .putExtra(CalendarContract.Events.EVENT_LOCATION, l.roomNames)
-                        .putExtra(CalendarContract.Events.DESCRIPTION, "${l.teacherNames}\n${l.classNames} ${l.group}\nPublished timetable; check EduPage for substitutions.")
+                        .putExtra(
+                            CalendarContract.Events.DESCRIPTION,
+                            "${l.teacherNames}\n${l.classNames} ${l.group}\n$calendarEventDescription"
+                        )
                         .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, Exports.instant(dated.date,l.start!!,ZoneId.of(s.zone)).toEpochMilli())
                         .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, Exports.instant(dated.date,l.end!!,ZoneId.of(s.zone)).toEpochMilli())
-                    try { context.startActivity(intent) } catch (_: Exception) { vm.message("Install a calendar app, or export the week as .ics.") }
-                }) { Text("Add to calendar") }
+                    try {
+                        context.startActivity(intent)
+                    } catch (_: Exception) {
+                        vm.message(installCalendarOrExportMessage)
+                    }
+                }) { Text(stringResource(R.string.add_to_calendar)) }
             }
         }
     }
 }
 
-@Composable fun SetupScreen(vm: ScheduleViewModel, defaultZone: String) {
+@Composable fun SetupScreen(vm: ScheduleViewModel, defaultZone: String, language: AppLanguage) {
+    val context = LocalContext.current
+    val checkAddressTimezoneMessage = stringResource(R.string.check_address_timezone)
     var host by rememberSaveable { mutableStateOf("") }
     var zone by rememberSaveable { mutableStateOf(defaultZone) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
@@ -279,26 +406,26 @@ class MainActivity : ComponentActivity() {
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp, vertical = 48.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Text("EduSchedule", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.SemiBold)
             Text(
-                "Set up your public EduPage timetable. No account or login is needed.",
+                stringResource(R.string.setup_description),
                 Modifier.padding(top = 8.dp, bottom = 28.dp),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             OutlinedTextField(
                 host, { host = it; error = null },
-                label = { Text("EduPage address") },
-                placeholder = { Text("school.edupage.org") },
-                supportingText = { Text("Use the school’s public *.edupage.org address.") },
+                label = { Text(stringResource(R.string.edupage_address)) },
+                placeholder = { Text(stringResource(R.string.edupage_placeholder)) },
+                supportingText = { Text(stringResource(R.string.edupage_address_help)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
                 zone, { zone = it; error = null },
-                label = { Text("School time zone") },
-                supportingText = { Text("For example, Europe/Tallinn") },
+                label = { Text(stringResource(R.string.school_time_zone)) },
+                supportingText = { Text(stringResource(R.string.timezone_example)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -310,19 +437,41 @@ class MainActivity : ComponentActivity() {
                         ZoneId.of(zone)
                         error = null
                         vm.school(host, zone)
-                    } catch (e: Exception) {
-                        error = e.message ?: "Check the address and time zone."
+                    } catch (_: Exception) {
+                        error = checkAddressTimezoneMessage
                     }
                 },
                 enabled = host.isNotBlank() && zone.isNotBlank(),
                 modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
-            ) { Text("Continue") }
+            ) { Text(stringResource(R.string.continue_action)) }
             Text(
-                "EduSchedule only reads the public timetable you provide. You can change it later in Settings.",
+                stringResource(R.string.setup_privacy),
                 Modifier.padding(top = 16.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Text(
+                stringResource(R.string.language),
+                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                AppLanguage.entries.forEach { option ->
+                    FilterChip(
+                        selected = language == option,
+                        onClick = {
+                            if (language != option) {
+                                vm.language(option)
+                                context.findActivity()?.recreate()
+                            }
+                        },
+                        label = { Text(stringResource(option.labelResource())) }
+                    )
+                }
+            }
         }
     }
 }
@@ -338,18 +487,39 @@ class MainActivity : ComponentActivity() {
     var kind by rememberSaveable { mutableStateOf(ScheduleKind.CLASS) }
     var query by rememberSaveable { mutableStateOf("") }
     Column(Modifier.padding(horizontal = 20.dp)) {
-        if (home.isBlank()) { Text("Make it yours", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold); Text("Choose your class to get started.", Modifier.padding(top = 4.dp, bottom = 12.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ScheduleKind.entries.forEach { k -> FilterChip(kind == k, { kind = k; query = "" }, { Text(k.label) }) }
+        if (home.isBlank()) {
+            Text(stringResource(R.string.make_it_yours), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(R.string.choose_class_to_start),
+                Modifier.padding(top = 4.dp, bottom = 12.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-        OutlinedTextField(query, { query = it }, label = { Text("Search ${kind.label.lowercase()}") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), leadingIcon = { Glyph("browse") })
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ScheduleKind.entries.forEach { k ->
+                FilterChip(kind == k, { kind = k; query = "" }, { Text(stringResource(k.pluralLabelResource())) })
+            }
+        }
+        OutlinedTextField(
+            query,
+            { query = it },
+            label = { Text(stringResource(kind.searchLabelResource())) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            leadingIcon = { Glyph("browse") }
+        )
         val entities = t.entities[kind].orEmpty().filter { it.name.contains(query, ignoreCase = true) }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp), contentPadding = PaddingValues(bottom = 20.dp)) {
-            if (entities.isEmpty()) item { EmptyState("No matches", "Try another name or schedule type.") }
+            if (entities.isEmpty()) item {
+                EmptyState(stringResource(R.string.no_matches), stringResource(R.string.try_another_schedule))
+            }
             items(entities, key = { it.id }) { entity ->
                 ListItem(headlineContent = { Text(entity.name, fontWeight = FontWeight.Medium) },
-                    supportingContent = if (kind == ScheduleKind.CLASS && entity.id == home) ({ Text("My class") }) else null,
-                    trailingContent = { if (selection == Selection(kind,entity.id)) Glyph("check", "Selected") else Glyph("next") },
+                    supportingContent = if (kind == ScheduleKind.CLASS && entity.id == home) ({ Text(stringResource(R.string.my_class)) }) else null,
+                    trailingContent = {
+                        if (selection == Selection(kind,entity.id)) Glyph("check", stringResource(R.string.selected))
+                        else Glyph("next")
+                    },
                     modifier = Modifier.clickable { choose(Selection(kind,entity.id)) },
                     colors = ListItemDefaults.colors(containerColor = if (selection == Selection(kind,entity.id)) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface))
             }
@@ -363,8 +533,18 @@ class MainActivity : ComponentActivity() {
     val today = date == now.toLocalDate()
     val current = if (today) blocks.firstOrNull { it.start != null && it.end != null && now.toLocalTime() >= it.start && now.toLocalTime() < it.end } else null
     val next = if (today) blocks.firstOrNull { it.start != null && it.start > now.toLocalTime() } else null
-    val emptyLines = listOf("Nothing on the board.", "No lessons today. Enjoy the gap.", "Clear schedule. Nice.", "No published lessons today.")
-    val doneLines = listOf("That’s your day.", "Done for today.", "You’re finished.", "Schedule cleared.")
+    val emptyLines = listOf(
+        R.string.empty_day_1,
+        R.string.empty_day_2,
+        R.string.empty_day_3,
+        R.string.empty_day_4
+    )
+    val doneLines = listOf(
+        R.string.done_day_1,
+        R.string.done_day_2,
+        R.string.done_day_3,
+        R.string.done_day_4
+    )
     val markerIndex = when {
         !today || blocks.isEmpty() -> -1
         current != null -> blocks.indexOf(current)
@@ -379,19 +559,28 @@ class MainActivity : ComponentActivity() {
                 Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         when {
-                            current != null -> "HAPPENING NOW"
-                            next != null -> "UP NEXT"
-                            blocks.isEmpty() -> "CLEAR SCHEDULE"
-                            today -> "ALL DONE"
+                            current != null -> stringResource(R.string.happening_now)
+                            next != null -> stringResource(R.string.up_next)
+                            blocks.isEmpty() -> stringResource(R.string.clear_schedule)
+                            today -> stringResource(R.string.all_done)
                             else -> date.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, locale).uppercase(locale)
                         },
                         style = MaterialTheme.typography.labelMedium
                     )
                     Text(
-                        focus?.let { if (it.isSplit && it.subjects.size > 1) "${it.lessons.size} group lessons" else it.title }
-                            ?: if (blocks.isEmpty()) emptyLines[date.dayOfYear % emptyLines.size]
-                            else if (today) doneLines[date.dayOfYear % doneLines.size]
-                            else "${blocks.size} ${if (blocks.size == 1) "lesson" else "lessons"}",
+                        focus?.let {
+                            if (it.isSplit && it.subjects.size > 1) {
+                                pluralStringResource(R.plurals.group_lessons, it.lessons.size, it.lessons.size)
+                            } else {
+                                it.title
+                            }
+                        } ?: if (blocks.isEmpty()) {
+                            stringResource(emptyLines[date.dayOfYear % emptyLines.size])
+                        } else if (today) {
+                            stringResource(doneLines[date.dayOfYear % doneLines.size])
+                        } else {
+                            pluralStringResource(R.plurals.lesson_count, blocks.size, blocks.size)
+                        },
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -399,7 +588,7 @@ class MainActivity : ComponentActivity() {
                         focus?.let { block ->
                             val rooms = block.lessons.map { it.roomNames }.filter(String::isNotBlank).distinct()
                             "${block.start ?: "?"}–${block.end ?: "?"}${if (rooms.isNotEmpty()) " · ${rooms.joinToString(" / ")}" else ""}"
-                        } ?: if (blocks.isEmpty()) "No published lessons for this selection."
+                        } ?: if (blocks.isEmpty()) stringResource(R.string.no_published_lessons_selection)
                         else "${blocks.first().start ?: "?"}–${blocks.last().end ?: "?"}",
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -415,7 +604,7 @@ class MainActivity : ComponentActivity() {
 
         item {
             Text(
-                "Published timetable · $revision\nDaily substitutions and holidays may differ.",
+                stringResource(R.string.published_timetable_footer, revision),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp)
@@ -428,7 +617,11 @@ class MainActivity : ComponentActivity() {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
         Surface(shape = RoundedCornerShape(999.dp), color = MaterialTheme.colorScheme.primaryContainer) {
-            Text("${time.format(DateTimeFormatter.ofPattern("HH:mm"))} now", Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelMedium)
+            Text(
+                stringResource(R.string.time_now, time.format(DateTimeFormatter.ofPattern("HH:mm"))),
+                Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.labelMedium
+            )
         }
         HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
     }
@@ -450,7 +643,11 @@ class MainActivity : ComponentActivity() {
                 Text(block.end?.toString() ?: "—", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("${block.lessons.size} groups", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(
+                    pluralStringResource(R.plurals.group_count, block.lessons.size, block.lessons.size),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
                 block.lessons.forEachIndexed { index, lesson ->
                     if (index > 0) HorizontalDivider()
                     Column(
@@ -496,6 +693,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 @Composable fun WeekScreen(s: ScheduleState, onLesson: (DatedLesson) -> Unit) {
+    val locale = LocalConfiguration.current.locales[0]
     val monday = s.date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
     // Wide, independently scrollable day columns keep real lesson names readable on phones.
     Row(Modifier.fillMaxSize().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -508,36 +706,137 @@ class MainActivity : ComponentActivity() {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(date.format(DateTimeFormatter.ofPattern("EEEE · d")), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    if (snapshot?.offline == true) Glyph("offline", "Using saved offline timetable")
+                    Text(
+                        date.format(DateTimeFormatter.ofPattern("EEEE · d", locale)),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    if (snapshot?.offline == true) {
+                        Glyph("offline", stringResource(R.string.using_saved_offline_timetable))
+                    }
                 }
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
-                    if (snapshot == null) item { Text(if (s.loading) "Loading…" else "Not available offline. Refresh to retry.") }
-                    else if (blocks.isEmpty()) item { Text("No published lessons", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    if (snapshot == null) item {
+                        Text(if (s.loading) stringResource(R.string.loading) else stringResource(R.string.not_available_offline))
+                    } else if (blocks.isEmpty()) item {
+                        Text(stringResource(R.string.no_published_lessons), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     items(blocks, key = { it.id }) { block -> LessonBlockCard(block) { onLesson(DatedLesson(date,it)) } }
                 }
             }
         }
     }
 }
-@Composable fun SettingsScreen(s: ScheduleState, vm: ScheduleViewModel, enableNotifications: () -> Unit, installUpdate: () -> Unit, open: (String) -> Unit) {
+@Composable fun SettingsScreen(
+    s: ScheduleState,
+    vm: ScheduleViewModel,
+    enableNotifications: () -> Unit,
+    installUpdate: () -> Unit,
+    open: (String) -> Unit
+) {
+    val context = LocalContext.current
     var host by remember(s.host) { mutableStateOf(s.host) }
     var zone by remember(s.zone) { mutableStateOf(s.zone) }
+
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { Text("Appearance", style = MaterialTheme.typography.titleLarge) }
-        item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("System", "Light", "Dark").forEach { FilterChip(s.theme == it, { vm.theme(it) }, { Text(it) }) } } }
-        item { SettingSwitch("Wallpaper colors", "Use your Android accent colors", s.dynamic, vm::dynamic) }
-        item { HorizontalDivider(); Spacer(Modifier.height(16.dp)); Text("Your school", style = MaterialTheme.typography.titleLarge) }
-        item { OutlinedTextField(host, { host = it }, label = { Text("EduPage address") }, singleLine = true, modifier = Modifier.fillMaxWidth()) }
-        item { OutlinedTextField(zone, { zone = it }, label = { Text("School time zone") }, supportingText = { Text("For example, Europe/Tallinn") }, singleLine = true, modifier = Modifier.fillMaxWidth()) }
-        item { FilledTonalButton(onClick = { vm.school(host,zone) }, enabled = host != s.host || zone != s.zone) { Text("Save school") } }
-        item { HorizontalDivider(); Spacer(Modifier.height(16.dp)); Text("Notifications", style = MaterialTheme.typography.titleLarge) }
-        item { SettingSwitch("Class reminders", "Notify for your saved class. Alerts include Mute 1h and Mute today; timetable-change and app-update alerts are included too. Android may delay background work.", s.notifications) { if (it) enableNotifications() else vm.notifications(false) } }
+        item { Text(stringResource(R.string.appearance), style = MaterialTheme.typography.titleLarge) }
+        item {
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf(
+                    "System" to R.string.theme_system,
+                    "Light" to R.string.theme_light,
+                    "Dark" to R.string.theme_dark
+                ).forEach { (value, label) ->
+                    FilterChip(
+                        selected = s.theme == value,
+                        onClick = { vm.theme(value) },
+                        label = { Text(stringResource(label)) }
+                    )
+                }
+            }
+        }
+        item {
+            SettingSwitch(
+                stringResource(R.string.wallpaper_colors),
+                stringResource(R.string.wallpaper_colors_description),
+                s.dynamic,
+                vm::dynamic
+            )
+        }
+        item {
+            Text(stringResource(R.string.language), style = MaterialTheme.typography.titleMedium)
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()).padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                AppLanguage.entries.forEach { option ->
+                    FilterChip(
+                        selected = s.language == option,
+                        onClick = {
+                            if (s.language != option) {
+                                vm.language(option)
+                                context.findActivity()?.recreate()
+                            }
+                        },
+                        label = { Text(stringResource(option.labelResource())) }
+                    )
+                }
+            }
+        }
+
+        item {
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
+            Text(stringResource(R.string.your_school), style = MaterialTheme.typography.titleLarge)
+        }
+        item {
+            OutlinedTextField(
+                host,
+                { host = it },
+                label = { Text(stringResource(R.string.edupage_address)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        item {
+            OutlinedTextField(
+                zone,
+                { zone = it },
+                label = { Text(stringResource(R.string.school_time_zone)) },
+                supportingText = { Text(stringResource(R.string.timezone_example)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        item {
+            FilledTonalButton(
+                onClick = { vm.school(host, zone) },
+                enabled = host != s.host || zone != s.zone
+            ) { Text(stringResource(R.string.save_school)) }
+        }
+
+        item {
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
+            Text(stringResource(R.string.notifications), style = MaterialTheme.typography.titleLarge)
+        }
+        item {
+            SettingSwitch(
+                stringResource(R.string.class_reminders),
+                stringResource(R.string.class_reminders_description),
+                s.notifications
+            ) {
+                if (it) enableNotifications() else vm.notifications(false)
+            }
+        }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Early reminder", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.early_reminder), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Choose how long before class to get a heads-up. The start-time alert still fires separately.",
+                    stringResource(R.string.early_reminder_description),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -549,19 +848,33 @@ class MainActivity : ComponentActivity() {
                         FilterChip(
                             selected = s.classReminderLeadMinutes == minutes,
                             onClick = { vm.classReminderLeadMinutes(minutes) },
-                            label = { Text(if (minutes == 0) "Off" else "$minutes min") },
+                            label = {
+                                Text(
+                                    if (minutes == 0) stringResource(R.string.off)
+                                    else stringResource(R.string.minutes_short, minutes)
+                                )
+                            },
                             enabled = s.notifications
                         )
                     }
                 }
             }
         }
-        item { Spacer(Modifier.height(8.dp)); Text("Updates", style = MaterialTheme.typography.titleLarge) }
+
+        item {
+            Spacer(Modifier.height(8.dp))
+            Text(stringResource(R.string.updates), style = MaterialTheme.typography.titleLarge)
+        }
         item {
             OutlinedButton(
                 onClick = { vm.updates() },
                 enabled = !s.updateChecking && !s.updateDownloading
-            ) { Text(if (s.updateChecking) "Checking…" else "Check for app updates") }
+            ) {
+                Text(
+                    if (s.updateChecking) stringResource(R.string.checking)
+                    else stringResource(R.string.check_for_updates)
+                )
+            }
         }
         s.release?.let { release ->
             item {
@@ -570,20 +883,28 @@ class MainActivity : ComponentActivity() {
                         Modifier.fillMaxWidth().padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text("EduSchedule ${release.version}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         Text(
-                            if (s.updateDownloading) "Downloading and verifying the signed APK…"
-                            else "Download the verified APK here. Android will ask you to confirm the update.",
+                            "${stringResource(R.string.app_name)} ${release.version}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            if (s.updateDownloading) stringResource(R.string.downloading_verifying)
+                            else stringResource(R.string.download_update_description),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         if (s.updateDownloading) {
                             val progress = s.updateProgress
-                            if (progress == null) LinearProgressIndicator(Modifier.fillMaxWidth())
-                            else {
-                                LinearProgressIndicator(progress = { progress / 100f }, modifier = Modifier.fillMaxWidth())
+                            if (progress == null) {
+                                LinearProgressIndicator(Modifier.fillMaxWidth())
+                            } else {
+                                LinearProgressIndicator(
+                                    progress = { progress / 100f },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                                 Text(
-                                    if (progress < 100) "$progress%" else "Verifying…",
+                                    if (progress < 100) "$progress%" else stringResource(R.string.verifying),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -594,20 +915,53 @@ class MainActivity : ComponentActivity() {
                             enabled = !s.updateDownloading,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(if (s.updateDownloading) "Preparing update…" else "Download & install")
+                            Text(
+                                if (s.updateDownloading) stringResource(R.string.preparing_update)
+                                else stringResource(R.string.download_install)
+                            )
                         }
                     }
                 }
             }
         }
+
         val groups = s.snapshot?.timetable?.groups?.get(s.selection?.id).orEmpty()
         if (s.selection?.kind == ScheduleKind.CLASS && groups.isNotEmpty()) {
-            item { HorizontalDivider(); Spacer(Modifier.height(16.dp)); Text("Visible groups", style = MaterialTheme.typography.titleLarge); Text("Hide groups you don't attend. Whole-class lessons stay visible.", style = MaterialTheme.typography.bodyMedium) }
-            items(groups, key = { it.id }) { group -> SettingSwitch(group.name, "", group.id !in s.hidden) { enabled -> vm.groups(if (enabled) s.hidden - group.id else s.hidden + group.id) } }
+            item {
+                HorizontalDivider()
+                Spacer(Modifier.height(16.dp))
+                Text(stringResource(R.string.visible_groups), style = MaterialTheme.typography.titleLarge)
+                Text(
+                    stringResource(R.string.visible_groups_description),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            items(groups, key = { it.id }) { group ->
+                SettingSwitch(group.name, "", group.id !in s.hidden) { enabled ->
+                    vm.groups(if (enabled) s.hidden - group.id else s.hidden + group.id)
+                }
+            }
         }
-        item { HorizontalDivider(); Text("EduSchedule ${BuildConfig.VERSION_NAME}", Modifier.padding(top = 16.dp), style = MaterialTheme.typography.titleMedium)
-            Text("Independent reader for public EduPage timetables. No account, ads, or analytics. Timetables are stored on this device. Regular schedules may not include substitutions or holidays.", Modifier.padding(top = 8.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        item { TextButton(onClick = { open("https://github.com/${Updates.REPOSITORY}") }) { Text("Source, help & privacy") } }
+
+        item {
+            HorizontalDivider()
+            Text(
+                "${stringResource(R.string.app_name)} ${BuildConfig.VERSION_NAME}",
+                Modifier.padding(top = 16.dp),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                stringResource(R.string.about_description),
+                Modifier.padding(top = 8.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        item {
+            TextButton(onClick = { open("https://github.com/${Updates.REPOSITORY}") }) {
+                Text(stringResource(R.string.source_help_privacy))
+            }
+        }
     }
 }
 @Composable fun SettingSwitch(title: String, subtitle: String, checked: Boolean, change: (Boolean) -> Unit) {

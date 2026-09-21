@@ -60,6 +60,16 @@ Prefer adaptive width and scrolling behavior over squeezing content until labels
 - Status copy should say what is true now, not narrate implementation details.
 - Error messages should state the problem and, when useful, the next action.
 
+## Localization
+
+- Put user-visible application copy in Android string/plural resources; do not add language conditionals in Compose or domain models.
+- English is the default resource set. Estonian is the first translation, and new locales must keep resource keys and format arguments in parity.
+- Persist stable language identifiers, never translated labels.
+- Source-provided timetable content (subjects, teachers, rooms, classes, revision names) is data and must not be translated.
+- Format weekday/month names with the active app locale rather than the process default.
+- Background notifications, reminder actions, calendar descriptions, and export headers are part of the localized product surface too.
+- Prefer plurals for count-bearing copy instead of manually concatenating singular/plural words.
+
 ## Navigation
 
 The primary destinations are **Day**, **Week**, and **Browse**.

@@ -49,8 +49,8 @@ object ClassReminders {
                     .setInitialDelay(Duration.between(now, fireAt).toMillis(), TimeUnit.MILLISECONDS)
                     .setInputData(workDataOf(
                         "id" to block.id,
-                        "title" to block.title,
-                        "detail" to reminderDetail(block),
+                        "title" to reminderBlockTitle(context, block),
+                        "detail" to reminderDetail(context, block),
                         "minutesBefore" to minutesBefore
                     ))
                     .addTag(TAG)
@@ -69,16 +69,38 @@ object ClassReminders {
         return if (lead == 0) listOf(0) else listOf(lead, 0)
     }
 
-    internal fun notificationTitle(title: String, minutesBefore: Int): String =
-        if (minutesBefore > 0) "$title starts in $minutesBefore min" else "$title starts now"
+    internal fun notificationTitle(context: Context, title: String, minutesBefore: Int): String {
+        val language = Preferences(context).language
+        return if (minutesBefore > 0) {
+            AppLocale.string(context, language, R.string.class_starts_in, title, minutesBefore)
+        } else {
+            AppLocale.string(context, language, R.string.class_starts_now, title)
+        }
+    }
 
-    private fun reminderDetail(block: LessonBlock): String {
+    private fun reminderBlockTitle(context: Context, block: LessonBlock): String {
+        if (block.subjects.size == 1) return block.subjects.first()
+        val localized = AppLocale.wrap(context, Preferences(context).language)
+        return localized.resources.getQuantityString(
+            R.plurals.group_lessons,
+            block.lessons.size,
+            block.lessons.size
+        )
+    }
+
+    private fun reminderDetail(context: Context, block: LessonBlock): String {
         if (block.lessons.size == 1) {
             val lesson = block.lessons.first()
             return listOf(lesson.roomNames, lesson.teacherNames).filter(String::isNotBlank).joinToString(" · ")
         }
         val subjects = block.subjects.take(3).joinToString(" / ")
-        return if (subjects.isNotBlank()) subjects else "${block.lessons.size} group options"
+        if (subjects.isNotBlank()) return subjects
+        val localized = AppLocale.wrap(context, Preferences(context).language)
+        return localized.resources.getQuantityString(
+            R.plurals.group_options,
+            block.lessons.size,
+            block.lessons.size
+        )
     }
 
     internal fun mutedUntil(context: Context): Long =
@@ -96,7 +118,14 @@ object ClassReminders {
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
 
         val manager = context.getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Class reminders", NotificationManager.IMPORTANCE_DEFAULT))
+        val language = Preferences(context).language
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL,
+                AppLocale.string(context, language, R.string.class_reminders_channel),
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+        )
 
         val open = PendingIntent.getActivity(
             context, notificationId,
@@ -111,15 +140,23 @@ object ClassReminders {
 
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(notificationTitle(title, minutesBefore))
+            .setContentTitle(notificationTitle(context, title, minutesBefore))
             .setContentText(detail)
             .setStyle(NotificationCompat.BigTextStyle().bigText(detail))
             .setContentIntent(open)
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .addAction(0, "Mute 1h", muteIntent(ReminderActionReceiver.MUTE_HOUR, notificationId * 10 + 1))
-            .addAction(0, "Mute today", muteIntent(ReminderActionReceiver.MUTE_TODAY, notificationId * 10 + 2))
+            .addAction(
+                0,
+                AppLocale.string(context, language, R.string.mute_one_hour),
+                muteIntent(ReminderActionReceiver.MUTE_HOUR, notificationId * 10 + 1)
+            )
+            .addAction(
+                0,
+                AppLocale.string(context, language, R.string.mute_today),
+                muteIntent(ReminderActionReceiver.MUTE_TODAY, notificationId * 10 + 2)
+            )
             .build()
         if (NotificationManagerCompat.from(context).areNotificationsEnabled()) {
             NotificationManagerCompat.from(context).notify(notificationId, notification)

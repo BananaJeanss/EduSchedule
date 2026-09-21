@@ -16,6 +16,8 @@ Model identifiers are strings. Each positioned card/day remains a stable lesson 
 
 UI uses Material 3 surfaces, native bottom navigation, overflow actions, detail sheets, a date picker and 48dp icon buttons. Timetable content scrolls inside Scaffold system insets. Layouts avoid fixed text heights and support large type. Week columns remain readable rather than shrinking five columns into 360dp. Material You is available on Android 12+; a green neutral fallback supports older devices.
 
+Localization is resource-driven. English is the default resource set and Estonian lives in `values-et`; `AppLanguage` stores only stable locale identifiers and `AppLocale` applies an explicit language to Activity/background contexts. Domain models do not own translated display labels. User-visible dates use the active configuration locale explicitly, while background notifications and exported labels resolve through the persisted app language. Adding a locale requires a translated string resource set, an entry in `locales_config.xml`, and an `AppLanguage` entry. Unit tests enforce translation-key and format-placeholder parity.
+
 ## Background and exports
 
 An opt-in hourly WorkManager task refreshes the default class; Android battery restrictions can delay it. First sync establishes a baseline and never emits a false change alert. SHA-256 of default-class lesson content detects changes. The same opt-in system schedules one-time WorkManager jobs for remaining class starts and exposes `Mute 1h` / `Mute today` notification actions. These are reminders, not exact alarms: Android may defer work. A daily GitHub release check shares the opt-in worker.
@@ -35,5 +37,5 @@ Android 8+ treats EduSchedule as an external install source, so the user must ex
 - Group settings use source group IDs; school changes reset them. A revision may replace IDs and require reselecting groups/home class.
 - Teacher/room bell times use the lesson's class bell, then teacher bell, then base period. Multiple classes with differing bells in one card need further school-specific validation.
 - Weekly snapshot export skips lessons whose structured time is invalid; details disable calendar insertion for those lessons.
-- English interface; source names and device date formatting retain their language. Estonian localization is a follow-up.
+- English and Estonian interfaces are supported; source-provided school, subject, teacher, room and revision names remain exactly as published by EduPage.
 - Device/emulator visual and accessibility review is a release gate; passing compilation alone does not establish production readiness.

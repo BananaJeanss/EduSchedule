@@ -26,6 +26,10 @@ Resolve times in this order: day-specific overrides first; then an explicit vali
 
 Split-group ids are de-duplicated at parse time. For class schedules, parallel split groups occupying the same published time slot are presented as one card with readable group options instead of several duplicate-looking lesson cards. Teacher and room schedules remain unmerged because those views represent different responsibilities/locations rather than student alternatives.
 
+## Localization boundary
+
+EduPage-provided names are source data rather than application copy. Subject, class, teacher, room, group, school, week-cycle and revision names are therefore shown exactly as published by the school and are not translated by EduSchedule. Application-owned labels, states, notifications and export metadata use Android localization resources.
+
 ## Cache policy
 
 Index refresh: 30 minutes. Revision data: six hours. Manual refresh bypasses both. Foreground prefetch loads the selected week and keeps a bounded in-memory day cache so revisiting a loaded date is immediate. Disk cache size is bounded. Parsed payloads are validated before replacing a working snapshot, and `AtomicFile` preserves the prior copy if a write is interrupted.

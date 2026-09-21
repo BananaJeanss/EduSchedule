@@ -9,11 +9,7 @@ data class LessonBlock(val lessons: List<Lesson>) {
     val end: LocalTime? = lessons.mapNotNull { it.end }.maxOrNull()
     val subjects: List<String> = lessons.map { it.subject }.distinct()
     val isSplit: Boolean = lessons.size > 1
-    val title: String = when {
-        subjects.size == 1 -> subjects.first()
-        isSplit -> "Group lesson"
-        else -> subjects.first()
-    }
+    val title: String = subjects.firstOrNull().orEmpty()
 }
 
 fun Timetable.lessonBlocksOn(

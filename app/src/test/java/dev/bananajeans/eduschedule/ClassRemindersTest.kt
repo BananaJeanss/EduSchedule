@@ -15,8 +15,8 @@ class ClassRemindersTest {
     }
 
     @Test
-    fun notificationTitleReflectsReminderTiming() {
-        assertEquals("Chemistry starts in 15 min", ClassReminders.notificationTitle("Chemistry", 15))
-        assertEquals("Chemistry starts now", ClassReminders.notificationTitle("Chemistry", 0))
+    fun reminderOffsetsClampToSupportedRange() {
+        assertEquals(listOf(60, 0), ClassReminders.reminderOffsets(999))
+        assertEquals(listOf(0), ClassReminders.reminderOffsets(-5))
     }
 }

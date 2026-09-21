@@ -5,7 +5,7 @@ import org.json.JSONObject
 import java.time.*
 
 data class Entity(val id: String, val name: String)
-enum class ScheduleKind(val table: String, val label: String) { CLASS("classes", "Classes"), TEACHER("teachers", "Teachers"), ROOM("classrooms", "Rooms") }
+enum class ScheduleKind(val table: String) { CLASS("classes"), TEACHER("teachers"), ROOM("classrooms") }
 data class Selection(val kind: ScheduleKind, val id: String)
 data class ScheduleLink(val kind: ScheduleKind, val entity: Entity)
 data class Revision(val id: String, val name: String, val from: LocalDate)

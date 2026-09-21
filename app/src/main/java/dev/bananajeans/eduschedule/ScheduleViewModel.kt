@@ -23,6 +23,7 @@ data class ScheduleState(
     val message: String? = null,
     val theme: String = "System",
     val dynamic: Boolean = true,
+    val language: AppLanguage = AppLanguage.SYSTEM,
     val hidden: Set<String> = emptySet(),
     val cycleWeek: Int = 0,
     val release: AppRelease? = null,
@@ -47,6 +48,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
             date = LocalDate.now(ZoneId.of(preferences.zone)),
             theme = preferences.theme,
             dynamic = preferences.dynamic,
+            language = preferences.language,
             hidden = preferences.hiddenGroups,
             cycleWeek = preferences.cycleWeek,
             home = preferences.home,
@@ -93,6 +95,12 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
     fun dynamic(value: Boolean) {
         preferences.dynamic = value
         mutable.update { it.copy(dynamic = value) }
+    }
+
+    fun language(value: AppLanguage) {
+        preferences.language = value
+        mutable.update { it.copy(language = value) }
+        scheduleReminders()
     }
 
     fun cycle(value: Int) {
@@ -146,8 +154,8 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
             refresh(true)
-        } catch (e: Exception) {
-            message(e.message ?: "Check the EduPage address and time zone.")
+        } catch (_: Exception) {
+            message(localized(R.string.check_address_timezone))
         }
     }
 
@@ -204,8 +212,8 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
                 scheduleReminders()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                mutable.update { it.copy(error = e.message ?: "Could not load the timetable.") }
+            } catch (_: Exception) {
+                mutable.update { it.copy(error = localized(R.string.timetable_load_failed)) }
             } finally {
                 mutable.update { it.copy(loading = false) }
             }
@@ -259,14 +267,14 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
                 it.copy(
                     release = release,
                     message = if (!showResult) it.message
-                    else if (release == null) "You're up to date."
-                    else "${release.version} is available."
+                    else if (release == null) localized(R.string.up_to_date)
+                    else localized(R.string.version_available, release.version)
                 )
             }
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
-            if (showResult) message("No release could be checked. Try again later.")
+            if (showResult) message(localized(R.string.release_check_failed))
         } finally {
             mutable.update { it.copy(updateChecking = false) }
         }
@@ -285,7 +293,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
                     it.copy(
                         updateDownloading = false,
                         updateProgress = null,
-                        message = "Update verified. Confirm installation with Android."
+                        message = localized(R.string.update_ready)
                     )
                 }
             } catch (e: CancellationException) {
@@ -295,12 +303,15 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
                     it.copy(
                         updateDownloading = false,
                         updateProgress = null,
-                        message = e.message ?: "Could not prepare the update."
+                        message = localized(R.string.update_prepare_failed)
                     )
                 }
             }
         }
     }
+
+    private fun localized(resource: Int, vararg args: Any): String =
+        AppLocale.string(getApplication(), preferences.language, resource, *args)
 
     fun exportLessons(): List<DatedLesson> {
         val state = mutable.value
