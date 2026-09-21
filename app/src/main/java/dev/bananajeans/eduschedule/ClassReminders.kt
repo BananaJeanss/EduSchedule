@@ -5,6 +5,7 @@ import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -25,7 +26,9 @@ object ClassReminders {
     private const val CHANNEL = "class_reminders"
     private const val ALARM_PREFS = "class-reminder-alarms"
     private const val ALARM_KEYS = "keys"
-    private const val ACTION_FIRE = "dev.bananajeans.eduschedule.CLASS_REMINDER"
+    internal const val ACTION_FIRE = "dev.bananajeans.eduschedule.CLASS_REMINDER"
+    internal const val REMINDER_SCHEME = "eduschedule"
+    internal const val REMINDER_AUTHORITY = "class-reminder"
     private const val START_GRACE_MINUTES = 5L
 
     fun cancelAll(context: Context) {
@@ -145,12 +148,13 @@ object ClassReminders {
     private fun requestCode(key: String): Int = key.hashCode().and(Int.MAX_VALUE)
 
     private fun reminderIntent(context: Context, key: String): Intent =
-        Intent(context, ClassReminderReceiver::class.java)
-            .setAction(ACTION_FIRE)
+        Intent(ACTION_FIRE)
+            .setComponent(ComponentName(context, ClassReminderReceiver::class.java))
+            .setPackage(context.packageName)
             .setData(
                 Uri.Builder()
-                    .scheme("eduschedule")
-                    .authority("class-reminder")
+                    .scheme(REMINDER_SCHEME)
+                    .authority(REMINDER_AUTHORITY)
                     .appendPath(key)
                     .build()
             )
@@ -241,7 +245,10 @@ object ClassReminders {
         )
         fun muteIntent(action: String, requestCode: Int) = PendingIntent.getBroadcast(
             context, requestCode,
-            Intent(context, ReminderActionReceiver::class.java).setAction(action).putExtra("notificationId", notificationId),
+            Intent(action)
+                .setComponent(ComponentName(context, ReminderActionReceiver::class.java))
+                .setPackage(context.packageName)
+                .putExtra("notificationId", notificationId),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
@@ -273,6 +280,11 @@ object ClassReminders {
 
 class ClassReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != ClassReminders.ACTION_FIRE ||
+            intent.data?.scheme != ClassReminders.REMINDER_SCHEME ||
+            intent.data?.authority != ClassReminders.REMINDER_AUTHORITY
+        ) return
+
         val key = intent.getStringExtra("key").orEmpty()
         try {
             if (!Preferences(context).notifications) return
@@ -306,9 +318,12 @@ class ClassReminderWorker(context: Context, parameters: WorkerParameters) : Work
 
 class ReminderActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        val action = intent.action
+        if (action != MUTE_HOUR && action != MUTE_TODAY) return
+
         val zone = runCatching { ZoneId.of(Preferences(context).zone) }.getOrDefault(ZoneId.systemDefault())
         val now = ZonedDateTime.now(zone)
-        val until = when (intent.action) {
+        val until = when (action) {
             MUTE_HOUR -> now.plusHours(1).toInstant()
             MUTE_TODAY -> now.toLocalDate().plusDays(1).atStartOfDay(zone).toInstant()
             else -> return
