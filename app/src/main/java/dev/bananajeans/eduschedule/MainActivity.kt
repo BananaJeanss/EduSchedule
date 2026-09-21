@@ -378,7 +378,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable fun SetupScreen(vm: ScheduleViewModel, defaultZone: String) {
+@Composable fun SetupScreen(vm: ScheduleViewModel, defaultZone: String, language: AppLanguage) {
+    val context = LocalContext.current
     var host by rememberSaveable { mutableStateOf("") }
     var zone by rememberSaveable { mutableStateOf(defaultZone) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
@@ -387,26 +388,26 @@ class MainActivity : ComponentActivity() {
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp, vertical = 48.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Text("EduSchedule", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.SemiBold)
             Text(
-                "Set up your public EduPage timetable. No account or login is needed.",
+                stringResource(R.string.setup_description),
                 Modifier.padding(top = 8.dp, bottom = 28.dp),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             OutlinedTextField(
                 host, { host = it; error = null },
-                label = { Text("EduPage address") },
-                placeholder = { Text("school.edupage.org") },
-                supportingText = { Text("Use the school’s public *.edupage.org address.") },
+                label = { Text(stringResource(R.string.edupage_address)) },
+                placeholder = { Text(stringResource(R.string.edupage_placeholder)) },
+                supportingText = { Text(stringResource(R.string.edupage_address_help)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
                 zone, { zone = it; error = null },
-                label = { Text("School time zone") },
-                supportingText = { Text("For example, Europe/Tallinn") },
+                label = { Text(stringResource(R.string.school_time_zone)) },
+                supportingText = { Text(stringResource(R.string.timezone_example)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -418,19 +419,41 @@ class MainActivity : ComponentActivity() {
                         ZoneId.of(zone)
                         error = null
                         vm.school(host, zone)
-                    } catch (e: Exception) {
-                        error = e.message ?: "Check the address and time zone."
+                    } catch (_: Exception) {
+                        error = context.getString(R.string.check_address_timezone)
                     }
                 },
                 enabled = host.isNotBlank() && zone.isNotBlank(),
                 modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
-            ) { Text("Continue") }
+            ) { Text(stringResource(R.string.continue_action)) }
             Text(
-                "EduSchedule only reads the public timetable you provide. You can change it later in Settings.",
+                stringResource(R.string.setup_privacy),
                 Modifier.padding(top = 16.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Text(
+                stringResource(R.string.language),
+                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                AppLanguage.entries.forEach { option ->
+                    FilterChip(
+                        selected = language == option,
+                        onClick = {
+                            if (language != option) {
+                                vm.language(option)
+                                context.findActivity()?.recreate()
+                            }
+                        },
+                        label = { Text(stringResource(option.labelResource())) }
+                    )
+                }
+            }
         }
     }
 }
@@ -446,18 +469,39 @@ class MainActivity : ComponentActivity() {
     var kind by rememberSaveable { mutableStateOf(ScheduleKind.CLASS) }
     var query by rememberSaveable { mutableStateOf("") }
     Column(Modifier.padding(horizontal = 20.dp)) {
-        if (home.isBlank()) { Text("Make it yours", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold); Text("Choose your class to get started.", Modifier.padding(top = 4.dp, bottom = 12.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ScheduleKind.entries.forEach { k -> FilterChip(kind == k, { kind = k; query = "" }, { Text(k.label) }) }
+        if (home.isBlank()) {
+            Text(stringResource(R.string.make_it_yours), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(R.string.choose_class_to_start),
+                Modifier.padding(top = 4.dp, bottom = 12.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-        OutlinedTextField(query, { query = it }, label = { Text("Search ${kind.label.lowercase()}") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), leadingIcon = { Glyph("browse") })
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ScheduleKind.entries.forEach { k ->
+                FilterChip(kind == k, { kind = k; query = "" }, { Text(stringResource(k.pluralLabelResource())) })
+            }
+        }
+        OutlinedTextField(
+            query,
+            { query = it },
+            label = { Text(stringResource(kind.searchLabelResource())) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            leadingIcon = { Glyph("browse") }
+        )
         val entities = t.entities[kind].orEmpty().filter { it.name.contains(query, ignoreCase = true) }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp), contentPadding = PaddingValues(bottom = 20.dp)) {
-            if (entities.isEmpty()) item { EmptyState("No matches", "Try another name or schedule type.") }
+            if (entities.isEmpty()) item {
+                EmptyState(stringResource(R.string.no_matches), stringResource(R.string.try_another_schedule))
+            }
             items(entities, key = { it.id }) { entity ->
                 ListItem(headlineContent = { Text(entity.name, fontWeight = FontWeight.Medium) },
-                    supportingContent = if (kind == ScheduleKind.CLASS && entity.id == home) ({ Text("My class") }) else null,
-                    trailingContent = { if (selection == Selection(kind,entity.id)) Glyph("check", "Selected") else Glyph("next") },
+                    supportingContent = if (kind == ScheduleKind.CLASS && entity.id == home) ({ Text(stringResource(R.string.my_class)) }) else null,
+                    trailingContent = {
+                        if (selection == Selection(kind,entity.id)) Glyph("check", stringResource(R.string.selected))
+                        else Glyph("next")
+                    },
                     modifier = Modifier.clickable { choose(Selection(kind,entity.id)) },
                     colors = ListItemDefaults.colors(containerColor = if (selection == Selection(kind,entity.id)) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface))
             }
