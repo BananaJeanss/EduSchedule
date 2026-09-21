@@ -50,7 +50,9 @@
     <string name="schedule_kind_teachers">Õpetajad</string>
     <string name="schedule_kind_classes">Klassid</string>
     <string name="group">Rühm</string>
-    <string name="open_schedule">Ava %1$s tunniplaan</string>
+    <string name="open_room_schedule">Ava ruumi tunniplaan</string>
+    <string name="open_teacher_schedule">Ava õpetaja tunniplaan</string>
+    <string name="open_class_schedule">Ava klassi tunniplaan</string>
     <string name="selected">Valitud</string>
     <string name="search_classes">Otsi klasse</string>
     <string name="search_teachers">Otsi õpetajaid</string>
