@@ -31,6 +31,14 @@
     <string name="calendar_ics">Kalender (.ics)</string>
     <string name="spreadsheet_csv">Arvutustabel (.csv)</string>
     <string name="timetable">Tunniplaan</string>
+    <string name="csv_date">Kuupäev</string>
+    <string name="csv_start">Algus</string>
+    <string name="csv_end">Lõpp</string>
+    <string name="csv_subject">Aine</string>
+    <string name="csv_room">Ruum</string>
+    <string name="csv_teacher">Õpetaja</string>
+    <string name="csv_class">Klass</string>
+    <string name="csv_group">Rühm</string>
     <string name="calendar_event_description">Avaldatud tunniplaan; asendusi vaata EduPage’ist.</string>
     <string name="install_calendar_or_export">Paigalda kalendrirakendus või ekspordi nädal .ics-failina.</string>
     <string name="add_to_calendar">Lisa kalendrisse</string>
