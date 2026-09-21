@@ -100,6 +100,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
     fun language(value: AppLanguage) {
         preferences.language = value
         mutable.update { it.copy(language = value) }
+        scheduleReminders()
     }
 
     fun cycle(value: Int) {
