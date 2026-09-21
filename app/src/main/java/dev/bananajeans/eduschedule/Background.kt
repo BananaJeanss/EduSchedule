@@ -64,7 +64,7 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
                 .digest(lessons.toString().toByteArray())
                 .joinToString("") { "%02x".format(it) }
             val state = applicationContext.getSharedPreferences("background", Context.MODE_PRIVATE)
-            val key = "\${preferences.host}:\${preferences.home}"
+            val key = "${preferences.host}:${preferences.home}"
             val previous = state.getString(key, null)
             if (previous != null && previous != signature) {
                 notify(
