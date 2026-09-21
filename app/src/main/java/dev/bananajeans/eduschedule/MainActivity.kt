@@ -267,39 +267,79 @@ class MainActivity : ComponentActivity() {
         val picker = rememberDatePickerState(initialSelectedDateMillis = s.date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
         DatePickerDialog(onDismissRequest = { showDate = false }, confirmButton = { TextButton(onClick = {
             picker.selectedDateMillis?.let { vm.date(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }; showDate = false
-        }) { Text("Go") } }, dismissButton = { TextButton(onClick = { showDate = false }) { Text("Cancel") } }) { DatePicker(picker) }
+        }) { Text(stringResource(R.string.go)) } }, dismissButton = {
+            TextButton(onClick = { showDate = false }) { Text(stringResource(R.string.cancel)) }
+        }) { DatePicker(picker) }
     }
-    if (showExport) AlertDialog(onDismissRequest = { showExport = false }, title = { Text("Export this week") },
-        text = { Text("A dated snapshot of the visible lessons. Google Calendar can import the .ics file on the web. Exports do not update automatically. ${if (s.week.size < 7) "Some dates couldn't be loaded; refresh before exporting." else ""}") },
-        confirmButton = { TextButton(enabled = s.week.size == 7, onClick = {
-            pendingExport = Exports.ics(s.host, selectedName ?: "Timetable", vm.exportLessons(), ZoneId.of(s.zone)); export.launch("EduSchedule-${s.date}.ics"); showExport = false
-        }) { Text("Calendar (.ics)") } },
-        dismissButton = { TextButton(enabled = s.week.size == 7, onClick = { pendingExport = Exports.csv(vm.exportLessons()); export.launch("EduSchedule-${s.date}.csv"); showExport = false }) { Text("Spreadsheet (.csv)") } })
+    if (showExport) {
+        val exportDescription = buildString {
+            append(stringResource(R.string.export_description))
+            if (s.week.size < 7) {
+                append(" ")
+                append(stringResource(R.string.export_partial_warning))
+            }
+        }
+        val calendarDescription = stringResource(R.string.calendar_event_description)
+        val csvHeaders = listOf(
+            stringResource(R.string.csv_date),
+            stringResource(R.string.csv_start),
+            stringResource(R.string.csv_end),
+            stringResource(R.string.csv_subject),
+            stringResource(R.string.csv_room),
+            stringResource(R.string.csv_teacher),
+            stringResource(R.string.csv_class),
+            stringResource(R.string.csv_group)
+        )
+        AlertDialog(
+            onDismissRequest = { showExport = false },
+            title = { Text(stringResource(R.string.export_this_week)) },
+            text = { Text(exportDescription) },
+            confirmButton = {
+                TextButton(enabled = s.week.size == 7, onClick = {
+                    pendingExport = Exports.ics(
+                        s.host,
+                        selectedName ?: context.getString(R.string.timetable),
+                        vm.exportLessons(),
+                        ZoneId.of(s.zone),
+                        description = calendarDescription
+                    )
+                    export.launch("EduSchedule-${s.date}.ics")
+                    showExport = false
+                }) { Text(stringResource(R.string.calendar_ics)) }
+            },
+            dismissButton = {
+                TextButton(enabled = s.week.size == 7, onClick = {
+                    pendingExport = Exports.csv(vm.exportLessons(), csvHeaders)
+                    export.launch("EduSchedule-${s.date}.csv")
+                    showExport = false
+                }) { Text(stringResource(R.string.spreadsheet_csv)) }
+            }
+        )
+    }
     detail?.let { dated ->
         val l = dated.lesson
         val links = timetable?.linkedSchedules(l).orEmpty()
         ModalBottomSheet(onDismissRequest = { detail = null }) {
             Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(l.subject, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
-                Text("${dated.date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM"))} · ${l.start ?: "?"}–${l.end ?: "?"}", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "${dated.date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", locale))} · ${l.start ?: "?"}–${l.end ?: "?"}",
+                    style = MaterialTheme.typography.titleMedium
+                )
 
                 listOf(
                     ScheduleKind.ROOM to l.roomNames,
                     ScheduleKind.TEACHER to l.teacherNames,
                     ScheduleKind.CLASS to l.classNames
                 ).forEach { (kind, fallback) ->
-                    val label = when (kind) {
-                        ScheduleKind.ROOM -> "Room"
-                        ScheduleKind.TEACHER -> "Teacher"
-                        ScheduleKind.CLASS -> "Class"
-                    }
+                    val label = stringResource(kind.singularLabelResource())
                     val entityLinks = links.filter { it.kind == kind }
                     if (entityLinks.isNotEmpty()) {
                         entityLinks.forEach { link ->
                             ListItem(
                                 overlineContent = { Text(label) },
                                 headlineContent = { Text(link.entity.name, fontWeight = FontWeight.Medium) },
-                                trailingContent = { Glyph("next", "Open $label schedule") },
+                                trailingContent = { Glyph("next", stringResource(R.string.open_schedule, label)) },
                                 modifier = Modifier.fillMaxWidth().clickable {
                                     detail = null
                                     vm.date(dated.date)
@@ -313,17 +353,26 @@ class MainActivity : ComponentActivity() {
                         Text("$label · $fallback", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
-                if (l.group.isNotBlank()) Text("Group · ${l.group}", style = MaterialTheme.typography.bodyLarge)
+                if (l.group.isNotBlank()) {
+                    Text("${stringResource(R.string.group)} · ${l.group}", style = MaterialTheme.typography.bodyLarge)
+                }
 
                 Button(enabled = l.start != null && l.end != null, modifier = Modifier.fillMaxWidth(), onClick = {
                     val intent = Intent(Intent.ACTION_INSERT).setData(CalendarContract.Events.CONTENT_URI)
                         .putExtra(CalendarContract.Events.TITLE, l.subject)
                         .putExtra(CalendarContract.Events.EVENT_LOCATION, l.roomNames)
-                        .putExtra(CalendarContract.Events.DESCRIPTION, "${l.teacherNames}\n${l.classNames} ${l.group}\nPublished timetable; check EduPage for substitutions.")
+                        .putExtra(
+                            CalendarContract.Events.DESCRIPTION,
+                            "${l.teacherNames}\n${l.classNames} ${l.group}\n${context.getString(R.string.calendar_event_description)}"
+                        )
                         .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, Exports.instant(dated.date,l.start!!,ZoneId.of(s.zone)).toEpochMilli())
                         .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, Exports.instant(dated.date,l.end!!,ZoneId.of(s.zone)).toEpochMilli())
-                    try { context.startActivity(intent) } catch (_: Exception) { vm.message("Install a calendar app, or export the week as .ics.") }
-                }) { Text("Add to calendar") }
+                    try {
+                        context.startActivity(intent)
+                    } catch (_: Exception) {
+                        vm.message(context.getString(R.string.install_calendar_or_export))
+                    }
+                }) { Text(stringResource(R.string.add_to_calendar)) }
             }
         }
     }
