@@ -333,13 +333,20 @@ class MainActivity : ComponentActivity() {
                     ScheduleKind.CLASS to l.classNames
                 ).forEach { (kind, fallback) ->
                     val label = stringResource(kind.singularLabelResource())
+                    val openDescription = stringResource(
+                        when (kind) {
+                            ScheduleKind.ROOM -> R.string.open_room_schedule
+                            ScheduleKind.TEACHER -> R.string.open_teacher_schedule
+                            ScheduleKind.CLASS -> R.string.open_class_schedule
+                        }
+                    )
                     val entityLinks = links.filter { it.kind == kind }
                     if (entityLinks.isNotEmpty()) {
                         entityLinks.forEach { link ->
                             ListItem(
                                 overlineContent = { Text(label) },
                                 headlineContent = { Text(link.entity.name, fontWeight = FontWeight.Medium) },
-                                trailingContent = { Glyph("next", stringResource(R.string.open_schedule, label)) },
+                                trailingContent = { Glyph("next", openDescription) },
                                 modifier = Modifier.fillMaxWidth().clickable {
                                     detail = null
                                     vm.date(dated.date)
