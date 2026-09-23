@@ -78,7 +78,9 @@ object EduPageParser {
         val periodKeys = periodRows.map { it.optString("period", it.getString("id")) }
         val periods = periodRows.associateBy { it.optString("period", it.getString("id")) }
         val bells = index("bells")
-        fun names(ids: List<String>, source: Map<String, JSONObject>) = ids.map { source[it]?.let(::name) ?: it }.joinToString(", ")
+        // Different EduPage group IDs may carry the same visible label. Retain their IDs
+        // for filtering, but print each label only once in the timetable.
+        fun names(ids: List<String>, source: Map<String, JSONObject>) = ids.map { source[it]?.let(::name) ?: it }.distinct().joinToString(", ")
         fun parseClock(value: String): LocalTime? {
             val parts = value.trim().split(":")
             if (parts.size != 2) return null

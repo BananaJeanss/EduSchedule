@@ -4,7 +4,8 @@ A native Android reader for public aSc / EduPage timetables. Built around the ne
 
 ## Features
 
-- Material 3, Android wallpaper colors, light/dark/system themes, edge-to-edge layout, adaptive monochrome launcher icon, system back and proper navigation controls.
+- Material 3 Expressive theme, Android wallpaper colors, light/dark/system themes, edge-to-edge layout, adaptive monochrome launcher icon, system back and proper navigation controls.
+- Configurable home-screen widget: today's lessons, the next lesson, or the coming days; choose whether room and teacher names appear. Each widget instance has its own settings and uses the saved home class and offline cache.
 - English and Estonian interfaces with an in-app language selector, localized dates, notifications, calendar copy and export headers. The localization layer is resource-driven so additional languages can be added without branching UI logic.
 - Day agenda with current/next lesson, merged split-group blocks, a current-time marker, and a horizontally scrollable week board.
 - Search classes, teachers and rooms. Save a default class while browsing any other schedule. Hide unwanted split groups.

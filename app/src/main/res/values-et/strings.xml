@@ -168,4 +168,18 @@
     <string name="update_installed">EduSchedule on uuendatud.</string>
     <string name="update_cancelled">Uuendus tühistatud.</string>
     <string name="update_install_failed">Android ei saanud uuendust paigaldada.</string>
+    <string name="widget_today">Täna</string>
+    <string name="widget_next">Järgmine tund</string>
+    <string name="widget_week">Järgmised päevad</string>
+    <string name="widget_choose_class">Vali EduSchedule’is oma klass</string>
+    <string name="widget_no_lessons">Salvestatud tunniplaanis pole avaldatud tunde</string>
+    <string name="widget_open_to_save">Tunniplaani salvestamiseks ava EduSchedule</string>
+    <string name="widget_not_saved">Salvestamata</string>
+    <string name="widget_group_count">%1$d rühmatundi</string>
+    <string name="widget_lessons_count">%1$d tundi</string>
+    <string name="widget_configure">Sinu tunniplaani vidin</string>
+    <string name="widget_home_class_hint">Kasutab sinu salvestatud klassi. Rakenduse avamiseks puuduta vidinat.</string>
+    <string name="widget_show_rooms">Näita ruume</string>
+    <string name="widget_show_teachers">Näita õpetajaid</string>
+    <string name="widget_add">Lisa vidin</string>
 </resources>

@@ -61,6 +61,7 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
             val today = LocalDate.now(zone)
             val repository = Repository(applicationContext)
             val snapshot = repository.load(preferences.host, today)
+            ScheduleWidgets.refresh(applicationContext)
 
             ClassReminders.scheduleDay(
                 applicationContext,

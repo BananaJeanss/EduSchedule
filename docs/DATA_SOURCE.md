@@ -24,7 +24,7 @@ Resolve times in this order: day-specific overrides first; then an explicit vali
 
 ## Groups
 
-Split-group ids are de-duplicated at parse time. For class schedules, parallel split groups occupying the same published time slot are presented as one card with readable group options instead of several duplicate-looking lesson cards. Teacher and room schedules remain unmerged because those views represent different responsibilities/locations rather than student alternatives.
+Split-group ids are de-duplicated at parse time, and visible labels are de-duplicated separately because different source ids can share a name. All distinct ids remain available for filtering. For class schedules, parallel split groups occupying the same published time slot are presented as one card with readable group options instead of several duplicate-looking lesson cards. Teacher and room schedules remain unmerged because those views represent different responsibilities/locations rather than student alternatives.
 
 ## Localization boundary
 
