@@ -85,6 +85,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         preferences.home = value
         mutable.update { it.copy(home = value) }
         scheduleReminders()
+        ScheduleWidgets.refresh(getApplication())
     }
 
     fun theme(value: String) {
@@ -107,12 +108,14 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         preferences.cycleWeek = value
         mutable.update { it.copy(cycleWeek = value) }
         scheduleReminders()
+        ScheduleWidgets.refresh(getApplication())
     }
 
     fun groups(value: Set<String>) {
         preferences.hiddenGroups = value
         mutable.update { it.copy(hidden = value) }
         scheduleReminders()
+        ScheduleWidgets.refresh(getApplication())
     }
 
     fun notifications(value: Boolean) {
@@ -211,6 +214,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 mutable.update { it.copy(week = week) }
                 scheduleReminders()
+                ScheduleWidgets.refresh(getApplication())
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

@@ -101,6 +101,15 @@ class Repository(context: Context) {
     private fun cached(host: String, key: String): JSONObject? = runCatching {
         JSONObject(AtomicFile(file(host, key)).openRead().bufferedReader().use { it.readText() })
     }.getOrNull()
+    /** Widgets read only the validated local snapshot; a launcher update never starts a network request. */
+    suspend fun loadCached(hostInput: String, date: LocalDate): Snapshot? = withContext(Dispatchers.IO) {
+        val host = Preferences.normalizeHost(hostInput)
+        val index = cached(host, "index") ?: return@withContext null
+        val revision = EduPageParser.revisionFor(EduPageParser.revisions(index.getString("raw")), date)
+            ?: return@withContext null
+        val data = cached(host, revision.id) ?: return@withContext null
+        Snapshot(EduPageParser.parse(data.getString("raw"), revision), Instant.parse(data.getString("fetched")), true)
+    }
     private fun save(host: String, key: String, raw: String) {
         val atomic = AtomicFile(file(host, key)); val out = atomic.startWrite()
         try { out.write(JSONObject().put("fetched", Instant.now().toString()).put("raw", raw).toString().toByteArray()); atomic.finishWrite(out) }

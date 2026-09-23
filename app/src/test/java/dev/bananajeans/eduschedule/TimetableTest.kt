@@ -55,6 +55,17 @@ class TimetableTest {
         assertEquals("Group 1", lesson.group)
         assertEquals(listOf("g1"), lesson.groupIds)
     }
+    @Test fun distinctGroupIdsWithSameNamePrintOnceButRemainFilterable() {
+        val raw = javaClass.getResource("/timetable.json")!!.readText()
+            .replace("\"groupids\":[\"g1\"]", "\"groupids\":[\"g1\",\"g2\"]")
+            .replace("\"entireclass\":false}]", "\"entireclass\":false},{\"id\":\"g2\",\"classid\":\"*1\",\"name\":\"Group 1\",\"entireclass\":false}]")
+        val table = EduPageParser.parse(raw, revision)
+        val lesson = table.lessons.first { it.period == "4" }
+        assertEquals(listOf("g1", "g2"), lesson.groupIds)
+        assertEquals("Group 1", lesson.group)
+        assertEquals(1, table.lessonsOn(revision.from, Selection(ScheduleKind.CLASS, "*1"), setOf("g1")).size)
+        assertTrue(table.lessonsOn(revision.from, Selection(ScheduleKind.CLASS, "*1"), setOf("g1", "g2")).isEmpty())
+    }
     @Test fun cacheFileNamesAreDeterministicAndDoNotExposeInputs() {
         val name = Repository.cacheFileName("school.edupage.org", "227")
         assertTrue(name.matches(Regex("[0-9a-f]{64}\\.json")))

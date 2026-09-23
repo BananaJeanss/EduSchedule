@@ -71,7 +71,17 @@ class MainActivity : ComponentActivity() {
         if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
     } else if (dark) darkColorScheme(primary = Color(0xFFB5CEA8), secondaryContainer = Color(0xFF35452F))
     else lightColorScheme(primary = Color(0xFF426437), primaryContainer = Color(0xFFC3EBAF), surface = Color(0xFFF9FAF4), secondaryContainer = Color(0xFFE0E9D7))
-    MaterialTheme(colorScheme = scheme, content = content)
+    MaterialExpressiveTheme(
+        colorScheme = scheme,
+        shapes = Shapes(
+            extraSmall = RoundedCornerShape(8.dp),
+            small = RoundedCornerShape(12.dp),
+            medium = RoundedCornerShape(20.dp),
+            large = RoundedCornerShape(28.dp),
+            extraLarge = RoundedCornerShape(32.dp)
+        ),
+        content = content
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -245,7 +255,7 @@ class MainActivity : ComponentActivity() {
                         tab == "Browse" || s.selection == null -> BrowseScreen(timetable, s.selection, s.home, { vm.select(it); if (s.home.isBlank() && it.kind == ScheduleKind.CLASS) vm.home(it.id); tab = "Day" })
                         else -> {
                             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = { vm.date(s.date.minusDays(if (tab == "Week") 7 else 1)) }) {
+                                FilledTonalIconButton(onClick = { vm.date(s.date.minusDays(if (tab == "Week") 7 else 1)) }) {
                                     Glyph("back", stringResource(if (tab == "Week") R.string.previous_week else R.string.previous_day))
                                 }
                                 TextButton(onClick = { showDate = true }, modifier = Modifier.weight(1f)) {
@@ -254,7 +264,7 @@ class MainActivity : ComponentActivity() {
                                         if (s.loading) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
                                     }
                                 }
-                                IconButton(onClick = { vm.date(s.date.plusDays(if (tab == "Week") 7 else 1)) }) {
+                                FilledTonalIconButton(onClick = { vm.date(s.date.plusDays(if (tab == "Week") 7 else 1)) }) {
                                     Glyph("next", stringResource(if (tab == "Week") R.string.next_week else R.string.next_day))
                                 }
                                 TextButton(onClick = { vm.date(LocalDate.now(ZoneId.of(s.zone))) }) {
@@ -555,7 +565,7 @@ class MainActivity : ComponentActivity() {
     LazyColumn(contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             val focus = current ?: next
-            Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
+            Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         when {
@@ -581,7 +591,7 @@ class MainActivity : ComponentActivity() {
                         } else {
                             pluralStringResource(R.plurals.lesson_count, blocks.size, blocks.size)
                         },
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
@@ -633,7 +643,7 @@ class MainActivity : ComponentActivity() {
         return
     }
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = if (active) MaterialTheme.shapes.extraLarge else MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = if (active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer),
         border = if (active) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null
     ) {
@@ -671,7 +681,7 @@ class MainActivity : ComponentActivity() {
 @Composable fun LessonCard(lesson: Lesson, active: Boolean = false, onClick: () -> Unit) {
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
+        shape = if (active) MaterialTheme.shapes.extraLarge else MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = if (active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer),
         border = if (active) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null
     ) {

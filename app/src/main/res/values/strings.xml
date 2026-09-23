@@ -171,4 +171,18 @@
     <string name="update_installed">EduSchedule updated.</string>
     <string name="update_cancelled">Update cancelled.</string>
     <string name="update_install_failed">Android could not install the update.</string>
+    <string name="widget_today">Today</string>
+    <string name="widget_next">Up next</string>
+    <string name="widget_week">Coming days</string>
+    <string name="widget_choose_class">Choose your class in EduSchedule</string>
+    <string name="widget_no_lessons">No published lessons in the saved timetable</string>
+    <string name="widget_open_to_save">Open EduSchedule to save the timetable</string>
+    <string name="widget_not_saved">Not saved</string>
+    <string name="widget_group_count">%1$d group lessons</string>
+    <string name="widget_lessons_count">%1$d lessons</string>
+    <string name="widget_configure">Your schedule widget</string>
+    <string name="widget_home_class_hint">Uses your saved home class. Tap the widget to open EduSchedule.</string>
+    <string name="widget_show_rooms">Show rooms</string>
+    <string name="widget_show_teachers">Show teachers</string>
+    <string name="widget_add">Add widget</string>
 </resources>

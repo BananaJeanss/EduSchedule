@@ -1,4 +1,16 @@
 <resources>
+    <color name="widget_surface">#F1F5EB</color>
+    <color name="widget_text">#1A2819</color>
+    <color name="widget_accent">#426437</color>
+    <style name="WidgetRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingTop">7dp</item>
+        <item name="android:textColor">@color/widget_text</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
     <style name="Theme.EduSchedule" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowLightStatusBar">true</item>
