@@ -24,7 +24,7 @@ jobs:
       - name: Install SDK
         run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
       - name: Test, lint and assemble both variants
-        run: ./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease --write-locks --stacktrace
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease --no-configuration-cache --stacktrace
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
@@ -56,7 +56,7 @@ jobs:
           api-level: 35
           arch: x86_64
           disable-animations: true
-          script: ./gradlew connectedDebugAndroidTest --write-locks --stacktrace
+          script: ./gradlew connectedDebugAndroidTest --no-configuration-cache --stacktrace
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:

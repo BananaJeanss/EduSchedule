@@ -53,4 +53,7 @@ dependencies {
     androidTestImplementation(libs.compose.test)
     androidTestImplementation(libs.test.runner)
     androidTestImplementation(libs.test.ext)
+    // Keep the Android test runtime aligned with AndroidX Test 1.3's futures dependency.
+    androidTestImplementation("androidx.concurrent:concurrent-futures:1.2.0")
+    androidTestImplementation("androidx.concurrent:concurrent-futures-ktx:1.2.0")
 }
