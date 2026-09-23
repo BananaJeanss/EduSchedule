@@ -935,7 +935,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val groups = s.snapshot?.timetable?.groups?.get(s.selection?.id).orEmpty()
+        val groups = s.snapshot?.timetable?.groups?.get(s.selection?.id).orEmpty().groupBy { it.name }
         if (s.selection?.kind == ScheduleKind.CLASS && groups.isNotEmpty()) {
             item {
                 HorizontalDivider()
@@ -946,9 +946,10 @@ class MainActivity : ComponentActivity() {
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-            items(groups, key = { it.id }) { group ->
-                SettingSwitch(group.name, "", group.id !in s.hidden) { enabled ->
-                    vm.groups(if (enabled) s.hidden - group.id else s.hidden + group.id)
+            items(groups.entries.toList(), key = { it.key }) { (name, entries) ->
+                val ids = entries.map { it.id }.toSet()
+                SettingSwitch(name, "", ids.any { it !in s.hidden }) { enabled ->
+                    vm.groups(if (enabled) s.hidden - ids else s.hidden + ids)
                 }
             }
         }
