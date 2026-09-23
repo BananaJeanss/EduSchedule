@@ -34,6 +34,14 @@ android {
     lint { abortOnError = true; checkReleaseBuilds = true; disable += "NewerVersionAvailable" }
 }
 kotlin { jvmToolchain(17) }
+configurations.matching { it.name.contains("AndroidTest") }.configureEach {
+    // AndroidX Test 1.3 / Espresso 3.7 require 1.2.0, while published
+    // transitive metadata still carries a strict 1.1.0 lock constraint.
+    resolutionStrategy.force(
+        "androidx.concurrent:concurrent-futures:1.2.0",
+        "androidx.concurrent:concurrent-futures-ktx:1.2.0"
+    )
+}
 dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
