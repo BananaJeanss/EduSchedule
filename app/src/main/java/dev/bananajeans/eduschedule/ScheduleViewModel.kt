@@ -22,6 +22,8 @@ data class ScheduleState(
     val error: String? = null,
     val message: String? = null,
     val theme: String = "System",
+    val palette: String = "Default",
+    val customColors: ThemeColors = ThemeColors(),
     val dynamic: Boolean = true,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val hidden: Set<String> = emptySet(),
@@ -47,6 +49,8 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         ScheduleState(
             date = LocalDate.now(ZoneId.of(preferences.zone)),
             theme = preferences.theme,
+            palette = preferences.palette,
+            customColors = preferences.customColors,
             dynamic = preferences.dynamic,
             language = preferences.language,
             hidden = preferences.hiddenGroups,
@@ -91,6 +95,17 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
     fun theme(value: String) {
         preferences.theme = value
         mutable.update { it.copy(theme = value) }
+    }
+
+    fun palette(value: String) {
+        preferences.palette = value
+        mutable.update { it.copy(palette = value) }
+    }
+
+    fun customColors(value: ThemeColors) {
+        preferences.customColors = value
+        preferences.palette = "Custom"
+        mutable.update { it.copy(customColors = value, palette = "Custom") }
     }
 
     fun dynamic(value: Boolean) {

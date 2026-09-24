@@ -154,7 +154,7 @@ class ScheduleWidgetConfigActivity : ComponentActivity() {
         val localized = AppLocale.wrap(this, prefs.language)
         setContent {
             var options by remember { mutableStateOf(ScheduleWidgets.options(this, id)) }
-            EduTheme(prefs.theme, prefs.dynamic) {
+            EduTheme(prefs.theme, prefs.dynamic, prefs.palette, prefs.customColors) {
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(localized.getString(R.string.widget_configure), style = MaterialTheme.typography.headlineMedium)
                     Text(localized.getString(R.string.widget_home_class_hint), style = MaterialTheme.typography.bodyMedium)
