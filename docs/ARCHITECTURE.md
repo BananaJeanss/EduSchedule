@@ -32,6 +32,8 @@ Release discovery still uses GitHub's latest stable release API. For an availabl
 
 Android 8+ treats EduSchedule as an external install source, so the user must explicitly allow installs from EduSchedule once and Android still owns the final update-confirmation UI. There is no silent installation. The temporary APK is removed after it has been copied into the installer session, including on failure. Debug builds have a different package name/signing key and therefore cannot self-update from production releases.
 
+The PackageInstaller session reports status to an explicit, non-exported broadcast receiver. When the main activity is resumed, a pending user-action intent opens from that visible activity; when it is backgrounded, a notification opens the confirmation on tap (when notifications are allowed), and a process-local pending confirmation is shown on return. This avoids depending on Android granting a background activity launch to an installer callback. The emulator test sends a synthetic pending-user-action result through the same mutable broadcast PendingIntent and checks that confirmation is launched.
+
 ## Known scope boundaries
 
 - Regular published timetable only; no substitution/holiday overlay or login.
