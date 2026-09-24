@@ -28,6 +28,7 @@ object WearCache {
         val out = atomic.startWrite()
         try { out.write(bytes); atomic.finishWrite(out) }
         catch (error: Exception) { atomic.failWrite(out); return false }
+        WearReminders.reschedule(context, incoming)
         return true
     }
 

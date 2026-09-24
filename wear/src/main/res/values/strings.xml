@@ -10,4 +10,7 @@
     <string name="not_synced">This day has not been synced.</string>
     <string name="no_lessons">No published lessons.</string>
     <string name="now">Now</string>
+    <string name="reminders_channel">Class reminders</string>
+    <string name="starts_now">%1$s starts now</string>
+    <string name="starts_in">%1$s starts in %2$d minutes</string>
 </resources>
