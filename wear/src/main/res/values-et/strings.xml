@@ -13,4 +13,7 @@
     <string name="reminders_channel">Tundide meeldetuletused</string>
     <string name="starts_now">%1$s algab nüüd</string>
     <string name="starts_in">%1$s algab %2$d minuti pärast</string>
+    <string name="complication_label">EduSchedule järgmine tund</string>
+    <string name="complication_empty">Tunde pole</string>
+    <string name="complication_sync">Ava EduSchedule</string>
 </resources>
