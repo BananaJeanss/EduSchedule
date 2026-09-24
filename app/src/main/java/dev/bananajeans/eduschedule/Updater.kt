@@ -1,6 +1,10 @@
 package dev.bananajeans.eduschedule
 
 import android.app.PendingIntent
+import android.app.Activity
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
@@ -10,6 +14,11 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import android.Manifest
+import java.lang.ref.WeakReference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -248,12 +257,7 @@ object UpdateInstaller {
                     session.fsync(output)
                 }
             }
-            val statusIntent = Intent(context, InstallResultActivity::class.java)
-                .putExtra(InstallResultActivity.EXTRA_VERSION, release.version)
-            val flags = PendingIntent.FLAG_UPDATE_CURRENT or
-                if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0
-            val status = PendingIntent.getActivity(context, sessionId, statusIntent, flags)
-            session.commit(status.intentSender)
+            session.commit(statusReceiver(context, sessionId, release.version).intentSender)
         } catch (e: Exception) {
             session.abandon()
             throw e
@@ -261,6 +265,100 @@ object UpdateInstaller {
             session.close()
         }
     }
+
+    /** The OS delivers status via a broadcast, even when an Activity launch is restricted. */
+    internal fun statusReceiver(context: Context, sessionId: Int, version: String): PendingIntent {
+        val intent = Intent(context, InstallResultReceiver::class.java)
+            .putExtra(InstallResultActivity.EXTRA_VERSION, version)
+            .putExtra(PackageInstaller.EXTRA_SESSION_ID, sessionId)
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+            if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0
+        return PendingIntent.getBroadcast(context, sessionId, intent, flags)
+    }
+}
+
+class InstallResultReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        InstallResultRouter.handle(context, intent)
+    }
+}
+
+/** Keep the installer callback independent of background Activity launch permissions. */
+internal object InstallResultRouter {
+    private const val CHANNEL = "install_confirmation"
+    private var foreground: WeakReference<MainActivity>? = null
+    private var pendingConfirmation: Intent? = null
+
+    fun resumed(activity: MainActivity) {
+        foreground = WeakReference(activity)
+        pendingConfirmation?.let { confirmation ->
+            pendingConfirmation = null
+            open(activity, confirmation)
+        }
+    }
+
+    fun paused(activity: MainActivity) {
+        if (foreground?.get() === activity) foreground = null
+    }
+
+    fun clearPending() { pendingConfirmation = null }
+
+    fun handle(context: Context, result: Intent) {
+        if (result.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE) !=
+            PackageInstaller.STATUS_PENDING_USER_ACTION) {
+            foreground?.get()?.let { activity ->
+                // Surface the final outcome only while the app is visible.
+                activity.runOnUiThread { InstallResultActivity.showResult(activity, result) }
+            }
+            return
+        }
+        val confirmation = InstallResultActivity.confirmationIntent(result)
+        if (confirmation == null) {
+            Toast.makeText(context, localized(context, R.string.update_confirmation_failed), Toast.LENGTH_LONG).show()
+            return
+        }
+        val activity = foreground?.get()
+        if (activity != null && !activity.isFinishing) {
+            open(activity, confirmation)
+        } else {
+            pendingConfirmation = confirmation
+            notifyForConfirmation(context, result)
+        }
+    }
+
+    private fun open(activity: Activity, confirmation: Intent) {
+        runCatching { activity.startActivity(confirmation) }.onFailure {
+            Toast.makeText(activity, localized(activity, R.string.update_confirmation_failed), Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun notifyForConfirmation(context: Context, result: Intent) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        context.getSystemService(NotificationManager::class.java).createNotificationChannel(
+            NotificationChannel(CHANNEL, localized(context, R.string.update_action_needed), NotificationManager.IMPORTANCE_DEFAULT)
+        )
+        val sessionId = result.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, 0)
+        val intent = Intent(context, InstallResultActivity::class.java)
+            .putExtra(Intent.EXTRA_INTENT, InstallResultActivity.confirmationIntent(result))
+            .putExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_PENDING_USER_ACTION)
+        val pending = PendingIntent.getActivity(
+            context, sessionId, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(localized(context, R.string.update_action_needed))
+            .setContentText(localized(context, R.string.update_tap_to_confirm))
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+            .build()
+        if (NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+            NotificationManagerCompat.from(context).notify(50_000 + sessionId, notification)
+        }
+    }
+
+    private fun localized(context: Context, resource: Int) =
+        AppLocale.string(context, Preferences(context).language, resource)
 }
 
 class InstallResultActivity : ComponentActivity() {
@@ -276,6 +374,7 @@ class InstallResultActivity : ComponentActivity() {
     }
 
     private fun handle(result: Intent) {
+        InstallResultRouter.clearPending()
         when (result.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
             PackageInstaller.STATUS_PENDING_USER_ACTION -> {
                 val confirmation = confirmationIntent(result)
@@ -304,8 +403,20 @@ class InstallResultActivity : ComponentActivity() {
     private fun localized(resource: Int): String =
         AppLocale.string(this, Preferences(this).language, resource)
 
+    companion object {
+        const val EXTRA_VERSION = "update_version"
+
+        fun showResult(context: Context, result: Intent) {
+            val resource = when (result.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
+                PackageInstaller.STATUS_SUCCESS -> R.string.update_installed
+                PackageInstaller.STATUS_FAILURE_ABORTED -> R.string.update_cancelled
+                else -> R.string.update_install_failed
+            }
+            Toast.makeText(context, AppLocale.string(context, Preferences(context).language, resource), Toast.LENGTH_LONG).show()
+        }
+
     @Suppress("DEPRECATION")
-    private fun confirmationIntent(source: Intent): Intent? {
+    fun confirmationIntent(source: Intent): Intent? {
         val confirmation = if (Build.VERSION.SDK_INT >= 33) {
             source.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
         } else {
@@ -322,8 +433,5 @@ class InstallResultActivity : ComponentActivity() {
         }
         return confirmation
     }
-
-    companion object {
-        const val EXTRA_VERSION = "update_version"
     }
 }

@@ -51,6 +51,16 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 
 class MainActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        InstallResultRouter.resumed(this)
+    }
+
+    override fun onPause() {
+        InstallResultRouter.paused(this)
+        super.onPause()
+    }
+
     override fun attachBaseContext(newBase: Context) {
         val language = Preferences(newBase).language
         super.attachBaseContext(AppLocale.wrap(newBase, language))

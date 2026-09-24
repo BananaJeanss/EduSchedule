@@ -176,6 +176,8 @@
     <string name="app_update_available">Uuendus on saadaval. Ava Seaded, et uut versiooni vaadata.</string>
 
     <string name="update_confirmation_failed">Android ei saanud uuenduse kinnitust avada.</string>
+    <string name="update_action_needed">Kinnita uuendus</string>
+    <string name="update_tap_to_confirm">Puuduta, et avada Androidi paigalduskinnitus.</string>
     <string name="update_installed">EduSchedule on uuendatud.</string>
     <string name="update_cancelled">Uuendus tühistatud.</string>
     <string name="update_install_failed">Android ei saanud uuendust paigaldada.</string>

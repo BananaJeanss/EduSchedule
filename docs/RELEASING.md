@@ -34,6 +34,8 @@ The Expressive theme currently pins Material 3 `1.5.0-alpha29` because the theme
 
 Check real-device light/dark/dynamic colors, gesture and three-button navigation, rotation and large font sizes. Verify school/class selection, split groups, week/date transitions, offline restart, calendar insertion, .ics import in Google Calendar, denied notifications, class reminders with the app swiped away/process dead, reminder recovery after reboot/package update, stale-reminder suppression, denied/allowed exact-alarm access on Android 12 where applicable, denied/allowed unknown-app install access, update download/verification, Android install confirmation, and update cancellation. Check the regular-timetable limitation text.
 
+For the updater specifically, install an older **signed production** APK on a physical device, allow installs from EduSchedule, tap Download & install, and check that Android displays its confirmation after verification. Repeat with the app backgrounded during download: the notification should return to the confirmation. The emulator callback regression test uses a synthetic intent and cannot prove a real package manager's signing and confirmation behavior.
+
 For localization changes, test English, Estonian and System default from both first-run setup and Settings. Confirm the activity recreates into the selected locale; weekday/month names, notifications, reminder actions, calendar descriptions and CSV headers follow it; and source-provided timetable names remain unchanged. Unit tests enforce translation-key and format-placeholder parity, but device review is still required for truncation and layout regressions.
 
 An APK that compiles is not proof these device behaviors passed.
