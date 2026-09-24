@@ -1,12 +1,16 @@
 package dev.bananajeans.eduschedule.wear
 
 import android.content.BroadcastReceiver
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.Build
+import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -45,8 +49,12 @@ import java.util.Locale
 class WearActivity : ComponentActivity() {
     companion object { const val ACTION_CHANGED = "dev.bananajeans.eduschedule.wear.SNAPSHOT_CHANGED" }
     private var snapshot by mutableStateOf<WearSnapshot?>(null)
+    private val permission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
     private val receiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) { snapshot = WearCache.read(this@WearActivity) }
+        override fun onReceive(context: Context, intent: Intent) {
+            snapshot = WearCache.read(this@WearActivity)
+            requestReminderPermission()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,10 +67,24 @@ class WearActivity : ComponentActivity() {
         super.onStart()
         ContextCompat.registerReceiver(this, receiver, IntentFilter(ACTION_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED)
         snapshot = WearCache.read(this)
-        WearCache.loadLatest(this) { snapshot = WearCache.read(this) }
+        requestReminderPermission()
+        WearCache.loadLatest(this) {
+            snapshot = WearCache.read(this)
+            requestReminderPermission()
+        }
     }
 
     override fun onStop() { unregisterReceiver(receiver); super.onStop() }
+
+    private fun requestReminderPermission() {
+        if (Build.VERSION.SDK_INT < 33 || snapshot?.settings?.reminders != true ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        val prefs = getSharedPreferences("wear_permissions", MODE_PRIVATE)
+        if (!prefs.getBoolean("asked_notifications", false)) {
+            prefs.edit().putBoolean("asked_notifications", true).apply()
+            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     private fun requestSync() {
         Wearable.getNodeClient(this).connectedNodes.addOnSuccessListener { nodes ->

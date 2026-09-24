@@ -25,6 +25,7 @@ object WearReminders {
     private const val KEYS = "keys"
     private const val CHANNEL = "classes"
     const val ACTION_FIRE = "dev.bananajeans.eduschedule.wear.REMINDER"
+    const val ACTION_ROLLOVER = "dev.bananajeans.eduschedule.wear.ROLLOVER"
 
     fun reschedule(context: Context, snapshot: WearSnapshot?) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -32,10 +33,15 @@ object WearReminders {
         prefs.getStringSet(KEYS, emptySet()).orEmpty().forEach { key ->
             pending(context, key, PendingIntent.FLAG_NO_CREATE)?.let { manager.cancel(it); it.cancel() }
         }
+        val rollover = PendingIntent.getBroadcast(context, 0, Intent(context, WearClockReceiver::class.java)
+            .setAction(ACTION_ROLLOVER), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        manager.cancel(rollover)
         val keys = mutableSetOf<String>()
         if (snapshot != null && snapshot.settings.reminders) {
             val now = Instant.now()
             val today = LocalDate.now(snapshot.settings.zone)
+            val nextDay = today.plusDays(1).atTime(0, 5).atZone(snapshot.settings.zone).toInstant()
+            manager.set(AlarmManager.RTC_WAKEUP, nextDay.toEpochMilli(), rollover)
             snapshot.days.filter { !it.date.isBefore(today) && !it.date.isAfter(today.plusDays(1)) }
                 .forEach { day -> day.lessons.forEach { lesson ->
                     val start = lesson.start ?: return@forEach
@@ -119,7 +125,8 @@ class WearReminderReceiver : BroadcastReceiver() {
 
 class WearClockReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action in setOf(Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_TIMEZONE_CHANGED, Intent.ACTION_TIME_CHANGED))
+        if (intent.action in setOf(Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_TIMEZONE_CHANGED,
+                Intent.ACTION_TIME_CHANGED, WearReminders.ACTION_ROLLOVER))
             WearReminders.reschedule(context, WearCache.read(context))
     }
 }
