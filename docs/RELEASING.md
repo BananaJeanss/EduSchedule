@@ -28,6 +28,8 @@ Debug builds have a separate application ID and are available from Android CI ar
 
 ## Release review
 
+For theme and sheet changes, verify every preset and custom colors in light/dark mode, high-contrast text, wallpaper color switching, app restart, the widget setup screen, and a lesson sheet with short and long linked-entity lists on both gesture and three-button navigation. The Add to calendar action must be fully visible without dragging a short sheet.
+
 The Expressive theme currently pins Material 3 `1.5.0-alpha29` because the theme API is not in the 1.4 stable release. Recheck its API and test all screens before promoting this build. Add and resize multiple widgets with different modes/options; confirm the saved home class, offline/unsaved states, dark colors, midnight rollover and reconfiguration. Widget updates are launcher-controlled and may lag by up to 30 minutes.
 
 Check real-device light/dark/dynamic colors, gesture and three-button navigation, rotation and large font sizes. Verify school/class selection, split groups, week/date transitions, offline restart, calendar insertion, .ics import in Google Calendar, denied notifications, class reminders with the app swiped away/process dead, reminder recovery after reboot/package update, stale-reminder suppression, denied/allowed exact-alarm access on Android 12 where applicable, denied/allowed unknown-app install access, update download/verification, Android install confirmation, and update cancellation. Check the regular-timetable limitation text.

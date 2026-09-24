@@ -30,6 +30,23 @@ class Preferences(context: Context) {
     var theme: String
         get() = prefs.getString("theme", "System")!!
         set(value) { prefs.edit { putString("theme", value) } }
+    var palette: String
+        get() = prefs.getString("palette", "Default")!!.takeIf { it in setOf("Default", "Catppuccin", "Ocean", "Custom") } ?: "Default"
+        set(value) { require(value in setOf("Default", "Catppuccin", "Ocean", "Custom")); prefs.edit { putString("palette", value) } }
+    var customColors: ThemeColors
+        get() = ThemeColors(
+            prefs.getString("customPrimary", ThemeColors().primary)!!,
+            prefs.getString("customSecondary", ThemeColors().secondary)!!,
+            prefs.getString("customSurface", ThemeColors().surface)!!
+        )
+        set(value) {
+            require(listOf(value.primary, value.secondary, value.surface).all(::validHexColor))
+            prefs.edit {
+                putString("customPrimary", value.primary)
+                putString("customSecondary", value.secondary)
+                putString("customSurface", value.surface)
+            }
+        }
     var dynamic: Boolean
         get() = prefs.getBoolean("dynamic", true)
         set(value) { prefs.edit { putBoolean("dynamic", value) } }

@@ -18,6 +18,9 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,6 +28,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -56,7 +62,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val vm: ScheduleViewModel = viewModel()
             val state by vm.state.collectAsStateWithLifecycle()
-            EduTheme(state.theme, state.dynamic) { ScheduleApp(vm, state, openSettings) }
+            EduTheme(state.theme, state.dynamic, state.palette, state.customColors) { ScheduleApp(vm, state, openSettings) }
         }
     }
 
@@ -64,13 +70,12 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_OPEN_SETTINGS = "open_settings"
     }
 }
-@Composable fun EduTheme(theme: String = "System", dynamic: Boolean = true, content: @Composable () -> Unit) {
+@Composable fun EduTheme(theme: String = "System", dynamic: Boolean = true, palette: String = "Default", customColors: ThemeColors = ThemeColors(), content: @Composable () -> Unit) {
     val dark = theme == "Dark" || (theme == "System" && isSystemInDarkTheme())
     val context = LocalContext.current
-    val scheme = if (dynamic && Build.VERSION.SDK_INT >= 31) {
+    val scheme = if (palette == "Default" && dynamic && Build.VERSION.SDK_INT >= 31) {
         if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-    } else if (dark) darkColorScheme(primary = Color(0xFFB5CEA8), secondaryContainer = Color(0xFF35452F))
-    else lightColorScheme(primary = Color(0xFF426437), primaryContainer = Color(0xFFC3EBAF), surface = Color(0xFFF9FAF4), secondaryContainer = Color(0xFFE0E9D7))
+    } else themeScheme(palette, dark, customColors)
     MaterialExpressiveTheme(
         colorScheme = scheme,
         shapes = Shapes(
@@ -339,8 +344,19 @@ class MainActivity : ComponentActivity() {
     detail?.let { dated ->
         val l = dated.lesson
         val links = timetable?.linkedSchedules(l).orEmpty()
-        ModalBottomSheet(onDismissRequest = { detail = null }) {
-            Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        ModalBottomSheet(
+            onDismissRequest = { detail = null },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                Modifier.fillMaxWidth()
+                    .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.85f).dp)
+                    .verticalScroll(rememberScrollState())
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Text(l.subject, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
                 Text(
                     "${dated.date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", locale))} · ${l.start ?: "?"}–${l.end ?: "?"}",
@@ -625,7 +641,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable fun CurrentTimeMarker(time: LocalTime) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
+        TimeWave(Modifier.weight(1f))
         Surface(shape = RoundedCornerShape(999.dp), color = MaterialTheme.colorScheme.primaryContainer) {
             Text(
                 stringResource(R.string.time_now, time.format(DateTimeFormatter.ofPattern("HH:mm"))),
@@ -633,7 +649,24 @@ class MainActivity : ComponentActivity() {
                 style = MaterialTheme.typography.labelMedium
             )
         }
-        HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
+        TimeWave(Modifier.weight(1f))
+    }
+}
+
+@Composable private fun TimeWave(modifier: Modifier = Modifier) {
+    val color = MaterialTheme.colorScheme.primary
+    Canvas(modifier.height(8.dp)) {
+        val wavelength = 18.dp.toPx()
+        val amplitude = 2.dp.toPx()
+        val path = Path().apply {
+            moveTo(0f, size.height / 2)
+            var x = 0f
+            while (x <= size.width) {
+                lineTo(x, size.height / 2 + kotlin.math.sin(x / wavelength * 2 * Math.PI).toFloat() * amplitude)
+                x += 2.dp.toPx()
+            }
+        }
+        drawPath(path, color, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
     }
 }
 
@@ -747,6 +780,7 @@ class MainActivity : ComponentActivity() {
     val context = LocalContext.current
     var host by remember(s.host) { mutableStateOf(s.host) }
     var zone by remember(s.zone) { mutableStateOf(s.zone) }
+    var editColors by remember { mutableStateOf(false) }
 
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { Text(stringResource(R.string.appearance), style = MaterialTheme.typography.titleLarge) }
@@ -769,12 +803,35 @@ class MainActivity : ComponentActivity() {
             }
         }
         item {
+            Text(stringResource(R.string.color_palette), style = MaterialTheme.typography.titleMedium)
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()).padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf(
+                    "Default" to R.string.palette_default,
+                    "Catppuccin" to R.string.palette_catppuccin,
+                    "Ocean" to R.string.palette_ocean,
+                    "Custom" to R.string.palette_custom
+                ).forEach { (value, label) ->
+                    FilterChip(
+                        selected = s.palette == value,
+                        onClick = { if (value == "Custom") editColors = true else vm.palette(value) },
+                        label = { Text(stringResource(label)) }
+                    )
+                }
+            }
+        }
+        if (s.palette == "Default") item {
             SettingSwitch(
                 stringResource(R.string.wallpaper_colors),
                 stringResource(R.string.wallpaper_colors_description),
                 s.dynamic,
                 vm::dynamic
             )
+        }
+        if (s.palette == "Custom") item {
+            TextButton(onClick = { editColors = true }) { Text(stringResource(R.string.edit_custom_colors)) }
         }
         item {
             Text(stringResource(R.string.language), style = MaterialTheme.typography.titleMedium)
@@ -974,6 +1031,47 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    if (editColors) CustomColorsDialog(s.customColors, onDismiss = { editColors = false }) {
+        vm.customColors(it)
+        editColors = false
+    }
+}
+
+@Composable private fun CustomColorsDialog(initial: ThemeColors, onDismiss: () -> Unit, onSave: (ThemeColors) -> Unit) {
+    var primary by remember(initial) { mutableStateOf(initial.primary) }
+    var secondary by remember(initial) { mutableStateOf(initial.secondary) }
+    var surface by remember(initial) { mutableStateOf(initial.surface) }
+    val colors = ThemeColors(primary.trim(), secondary.trim(), surface.trim())
+    val valid = listOf(colors.primary, colors.secondary, colors.surface).all(::validHexColor)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.edit_custom_colors)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.custom_colors_hint), style = MaterialTheme.typography.bodySmall)
+                listOf(
+                    Triple(R.string.color_primary, primary, { text: String -> primary = text }),
+                    Triple(R.string.color_secondary, secondary, { text: String -> secondary = text }),
+                    Triple(R.string.color_surface, surface, { text: String -> surface = text })
+                ).forEach { (label, value, update) ->
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Surface(
+                            Modifier.size(32.dp), shape = RoundedCornerShape(12.dp),
+                            color = parseHexColor(value.trim()) ?: MaterialTheme.colorScheme.surfaceContainerHigh,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                        ) {}
+                        OutlinedTextField(
+                            value = value, onValueChange = { if (it.length <= 7) update(it) },
+                            modifier = Modifier.weight(1f), label = { Text(stringResource(label)) },
+                            singleLine = true, isError = !validHexColor(value.trim())
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(enabled = valid, onClick = { onSave(colors) }) { Text(stringResource(R.string.save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
+    )
 }
 @Composable fun SettingSwitch(title: String, subtitle: String, checked: Boolean, change: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {

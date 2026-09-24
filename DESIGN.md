@@ -18,6 +18,7 @@ Use Jetpack Compose Material 3 components and behavior unless there is a concret
 - Keep the app edge-to-edge and compatible with gesture and button navigation.
 - Use Material dynamic color on supported Android versions, with the existing fallback schemes elsewhere.
 - Use `MaterialTheme.colorScheme`, `MaterialTheme.typography`, and component defaults instead of one-off hardcoded styling.
+- Keep palette choices paired with light/dark modes and derive readable foreground colors for custom input. Wallpaper colors apply to the Default palette.
 - Prefer standard Material 3 components such as `TopAppBar`, `NavigationBar`, `Card`, `ModalBottomSheet`, `ListItem`, `FilterChip`, dialogs, snackbars, and progress indicators.
 - Do not recreate a platform component merely to make it look unique.
 
@@ -88,6 +89,7 @@ The primary destinations are **Day**, **Week**, and **Browse**.
 - Group labels are tertiary and should not overpower the subject.
 - Parallel group lessons may share a visual block, but each underlying lesson must remain independently inspectable.
 - Lesson detail sheets may expose room, teacher, class, group, and calendar actions without making the timetable itself dense.
+- Short lesson sheets open fully, with their actions clear of the system navigation bar; longer lists scroll within the sheet.
 - Use list rows with a trailing navigation symbol when metadata is actionable.
 
 ## Loading, offline, empty, and error states

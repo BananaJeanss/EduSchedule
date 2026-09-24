@@ -108,6 +108,16 @@
     <string name="no_published_lessons">Avaldatud tunde pole</string>
 
     <string name="appearance">Välimus</string>
+    <string name="color_palette">Värviteema</string>
+    <string name="palette_default">Vaikimisi</string>
+    <string name="palette_catppuccin">Catppuccin</string>
+    <string name="palette_ocean">Ookean</string>
+    <string name="palette_custom">Kohandatud</string>
+    <string name="edit_custom_colors">Muuda kohandatud värve</string>
+    <string name="custom_colors_hint">Sisesta kuueteistkümnendvärvid (#RRGGBB). Tume teema kasutab tumedamat tausta ja heledamaid rõhuvärve.</string>
+    <string name="color_primary">Põhivärv</string>
+    <string name="color_secondary">Teisene värv</string>
+    <string name="color_surface">Taustavärv</string>
     <string name="theme_system">Süsteem</string>
     <string name="theme_light">Hele</string>
     <string name="theme_dark">Tume</string>
