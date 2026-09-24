@@ -6,3 +6,4 @@ dependencyResolutionManagement {
 rootProject.name = "EduSchedule"
 include(":app")
 include(":sync")
+include(":wear")

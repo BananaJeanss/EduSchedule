@@ -90,33 +90,39 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         mutable.update { it.copy(home = value) }
         scheduleReminders()
         ScheduleWidgets.refresh(getApplication())
+        WearPublisher.enqueue(getApplication())
     }
 
     fun theme(value: String) {
         preferences.theme = value
         mutable.update { it.copy(theme = value) }
+        WearPublisher.enqueue(getApplication())
     }
 
     fun palette(value: String) {
         preferences.palette = value
         mutable.update { it.copy(palette = value) }
+        WearPublisher.enqueue(getApplication())
     }
 
     fun customColors(value: ThemeColors) {
         preferences.customColors = value
         preferences.palette = "Custom"
         mutable.update { it.copy(customColors = value, palette = "Custom") }
+        WearPublisher.enqueue(getApplication())
     }
 
     fun dynamic(value: Boolean) {
         preferences.dynamic = value
         mutable.update { it.copy(dynamic = value) }
+        WearPublisher.enqueue(getApplication())
     }
 
     fun language(value: AppLanguage) {
         preferences.language = value
         mutable.update { it.copy(language = value) }
         scheduleReminders()
+        WearPublisher.enqueue(getApplication())
     }
 
     fun cycle(value: Int) {
@@ -124,6 +130,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         mutable.update { it.copy(cycleWeek = value) }
         scheduleReminders()
         ScheduleWidgets.refresh(getApplication())
+        WearPublisher.enqueue(getApplication())
     }
 
     fun groups(value: Set<String>) {
@@ -131,6 +138,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         mutable.update { it.copy(hidden = value) }
         scheduleReminders()
         ScheduleWidgets.refresh(getApplication())
+        WearPublisher.enqueue(getApplication())
     }
 
     fun notifications(value: Boolean) {
@@ -138,6 +146,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         mutable.update { it.copy(notifications = value) }
         Background.configure(getApplication(), value)
         if (value) scheduleReminders()
+        WearPublisher.enqueue(getApplication())
     }
 
     fun classReminderLeadMinutes(value: Int) {
@@ -145,6 +154,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         preferences.classReminderLeadMinutes = minutes
         mutable.update { it.copy(classReminderLeadMinutes = minutes) }
         scheduleReminders()
+        WearPublisher.enqueue(getApplication())
     }
 
     fun school(value: String, zone: String) {
@@ -173,6 +183,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
             refresh(true)
+            WearPublisher.enqueue(getApplication())
         } catch (_: Exception) {
             message(localized(R.string.check_address_timezone))
         }
@@ -230,6 +241,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
                 mutable.update { it.copy(week = week) }
                 scheduleReminders()
                 ScheduleWidgets.refresh(getApplication())
+                WearPublisher.enqueue(getApplication())
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
