@@ -97,12 +97,14 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         preferences.theme = value
         mutable.update { it.copy(theme = value) }
         WearPublisher.enqueue(getApplication())
+        ScheduleWidgets.refresh(getApplication())
     }
 
     fun palette(value: String) {
         preferences.palette = value
         mutable.update { it.copy(palette = value) }
         WearPublisher.enqueue(getApplication())
+        ScheduleWidgets.refresh(getApplication())
     }
 
     fun customColors(value: ThemeColors) {
@@ -110,12 +112,14 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         preferences.palette = "Custom"
         mutable.update { it.copy(customColors = value, palette = "Custom") }
         WearPublisher.enqueue(getApplication())
+        ScheduleWidgets.refresh(getApplication())
     }
 
     fun dynamic(value: Boolean) {
         preferences.dynamic = value
         mutable.update { it.copy(dynamic = value) }
         WearPublisher.enqueue(getApplication())
+        ScheduleWidgets.refresh(getApplication())
     }
 
     fun language(value: AppLanguage) {
