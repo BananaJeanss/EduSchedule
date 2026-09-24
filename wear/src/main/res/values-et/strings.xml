@@ -10,4 +10,7 @@
     <string name="not_synced">Seda päeva pole sünkroonitud.</string>
     <string name="no_lessons">Avaldatud tunde pole.</string>
     <string name="now">Praegu</string>
+    <string name="reminders_channel">Tundide meeldetuletused</string>
+    <string name="starts_now">%1$s algab nüüd</string>
+    <string name="starts_in">%1$s algab %2$d minuti pärast</string>
 </resources>
