@@ -10,6 +10,12 @@
 
 ## Design
 
+The Wear companion is being added in reviewable layers. `:sync` owns a versioned,
+bounded, display-ready dated snapshot; `WearProjection.kt` converts the phone's
+effective timetable revision and class-only lesson blocks into that contract.
+An explicit empty day means no published lessons; a missing date means it was not
+synced. No raw EduPage responses or private settings are sent to the watch.
+
 One Android module deliberately avoids a backend, DI framework, ORM or OAuth account system. First launch has no built-in school: the user supplies a public EduPage host and time zone before any timetable request is made. Compose observes an immutable `StateFlow` in an Android ViewModel. The repository runs HTTPS and file operations on IO, serializes disk-cache access with a process-wide mutex, validates payloads before atomic replacement, and returns a stale snapshot when refresh fails. The ViewModel also keeps a bounded in-memory day cache so revisiting prefetched dates is immediate without flashing empty state.
 
 Model identifiers are strings. Each positioned card/day remains a stable lesson in the data model. For class schedules only, `LessonBlocks.kt` groups parallel split-group lessons that occupy the same slot into one presentation block while retaining each underlying lesson for details/exports. Teacher and room browsing remain unmerged. Home class is separate from temporary selection. Date-specific week loads use each day's effective revision. The source has no calendar-to-week-cycle mapping, so multiweek schools require manual cycle selection.
