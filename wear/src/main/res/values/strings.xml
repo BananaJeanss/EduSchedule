@@ -13,4 +13,7 @@
     <string name="reminders_channel">Class reminders</string>
     <string name="starts_now">%1$s starts now</string>
     <string name="starts_in">%1$s starts in %2$d minutes</string>
+    <string name="complication_label">EduSchedule next class</string>
+    <string name="complication_empty">No classes</string>
+    <string name="complication_sync">Open EduSchedule</string>
 </resources>

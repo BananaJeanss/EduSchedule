@@ -29,6 +29,7 @@ object WearCache {
         try { out.write(bytes); atomic.finishWrite(out) }
         catch (error: Exception) { atomic.failWrite(out); return false }
         WearReminders.reschedule(context, incoming)
+        updateComplication(context)
         return true
     }
 

@@ -28,6 +28,7 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation(libs.activity)
     implementation(libs.wear.compose.material3)
+    implementation(libs.watchface.complications)
     implementation(project(":sync"))
     implementation(libs.wearable)
     implementation(libs.core)
