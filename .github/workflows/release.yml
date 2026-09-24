@@ -2,6 +2,7 @@ name: Signed release
 on:
   push:
     tags: ['v*']
+    branches: ['release/v*']
   workflow_dispatch:
     inputs:
       version:
@@ -24,6 +25,11 @@ jobs:
       attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify release branch is the current main commit
+        if: startsWith(github.ref, 'refs/heads/release/v')
+        run: |
+          set -euo pipefail
+          test "$GITHUB_SHA" = "$(git ls-remote origin refs/heads/main | cut -f1)"
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
@@ -41,6 +47,9 @@ jobs:
         run: |
           set -euo pipefail
           version="${INPUT_VERSION:-${GITHUB_REF_NAME#v}}"
+          if [[ "$GITHUB_REF" == refs/heads/release/v* ]]; then
+            version="${GITHUB_REF_NAME#release/v}"
+          fi
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Use a stable semantic version'; exit 1; }
           : "${SIGNING_KEYSTORE_BASE64:?Missing signing keystore secret}"
           : "${SIGNING_STORE_PASSWORD:?Missing store password}"
