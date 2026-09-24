@@ -1,6 +1,7 @@
 package dev.bananajeans.eduschedule.wear
 
 import android.content.Context
+import android.content.Intent
 import android.util.AtomicFile
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
@@ -46,8 +47,9 @@ class WearDataReceiver : WearableListenerService() {
     override fun onDataChanged(events: DataEventBuffer) {
         for (event in events) {
             val bytes = event.dataItem.data ?: continue
-            if (event.type == DataEvent.TYPE_CHANGED && event.dataItem.uri.path == WearCache.PATH)
-                WearCache.accept(this, bytes)
+            if (event.type == DataEvent.TYPE_CHANGED && event.dataItem.uri.path == WearCache.PATH &&
+                WearCache.accept(this, bytes))
+                sendBroadcast(Intent(WearActivity.ACTION_CHANGED).setPackage(packageName))
         }
     }
 }

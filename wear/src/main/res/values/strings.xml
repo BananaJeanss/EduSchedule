@@ -1,0 +1,13 @@
+<resources>
+    <string name="setup_phone">Set up EduSchedule on your phone.</string>
+    <string name="sync_now">Sync now</string>
+    <string name="back">Back</string>
+    <string name="today">Today</string>
+    <string name="week">Week</string>
+    <string name="status">Status</string>
+    <string name="last_sync">Last synced %1$s</string>
+    <string name="settings_on_phone">Change settings on your phone.</string>
+    <string name="not_synced">This day has not been synced.</string>
+    <string name="no_lessons">No published lessons.</string>
+    <string name="now">Now</string>
+</resources>

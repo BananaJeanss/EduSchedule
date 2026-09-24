@@ -1,0 +1,13 @@
+<resources>
+    <string name="setup_phone">Seadista EduSchedule telefonis.</string>
+    <string name="sync_now">Sünkrooni</string>
+    <string name="back">Tagasi</string>
+    <string name="today">Täna</string>
+    <string name="week">Nädal</string>
+    <string name="status">Olek</string>
+    <string name="last_sync">Viimati sünkroonitud %1$s</string>
+    <string name="settings_on_phone">Muuda seadeid telefonis.</string>
+    <string name="not_synced">Seda päeva pole sünkroonitud.</string>
+    <string name="no_lessons">Avaldatud tunde pole.</string>
+    <string name="now">Praegu</string>
+</resources>
