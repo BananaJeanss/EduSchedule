@@ -114,6 +114,7 @@
     <string name="palette_ocean">Ookean</string>
     <string name="palette_custom">Kohandatud</string>
     <string name="edit_custom_colors">Muuda kohandatud värve</string>
+    <string name="save">Salvesta</string>
     <string name="custom_colors_hint">Sisesta kuueteistkümnendvärvid (#RRGGBB). Tume teema kasutab tumedamat tausta ja heledamaid rõhuvärve.</string>
     <string name="color_primary">Põhivärv</string>
     <string name="color_secondary">Teisene värv</string>
