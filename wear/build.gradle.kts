@@ -1,4 +1,4 @@
-plugins { alias(libs.plugins.android.application); alias(libs.plugins.kotlin.compose) }
+plugins { alias(libs.plugins.android.application) }
 android {
     namespace = "dev.bananajeans.eduschedule.wear"
     compileSdk = 37
@@ -14,7 +14,6 @@ android {
         debug { applicationIdSuffix = ".debug"; versionNameSuffix = "-debug" }
         release { isMinifyEnabled = true; isShrinkResources = true }
     }
-    buildFeatures { compose = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     lint { abortOnError = true }
 }
