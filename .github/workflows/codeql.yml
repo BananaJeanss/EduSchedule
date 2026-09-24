@@ -41,3 +41,18 @@ jobs:
       - name: Compile all Kotlin source sets for analysis
         run: ./gradlew clean assembleDebug testDebugUnitTest assembleDebugAndroidTest --no-build-cache --no-configuration-cache --no-daemon -Pkotlin.compiler.execution.strategy=in-process
       - uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4
+        with:
+          output: ${{ runner.temp }}/codeql-sarif
+      - name: Print analysis findings for merge diagnosis
+        if: always()
+        run: |
+          python3 - <<'PYCODE'
+          import glob, json, os
+          for path in glob.glob(os.environ['RUNNER_TEMP'] + '/codeql-sarif/*.sarif'):
+              for run in json.load(open(path)).get('runs', []):
+                  for finding in run.get('results', []):
+                      place = finding.get('locations', [{}])[0].get('physicalLocation', {})
+                      print(finding.get('ruleId'), place.get('artifactLocation', {}).get('uri'),
+                            place.get('region', {}).get('startLine'),
+                            finding.get('message', {}).get('text', '')[:300])
+          PYCODE
