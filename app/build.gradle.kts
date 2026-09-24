@@ -44,6 +44,7 @@ configurations.matching { it.name.contains("AndroidTest") }.configureEach {
 }
 dependencies {
     implementation(project(":sync"))
+    implementation(libs.wearable)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.preview)

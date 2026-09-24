@@ -28,4 +28,12 @@ class WearSnapshotTest {
                 WearDay(LocalDate.now(), emptyList(), Instant.EPOCH)), Instant.EPOCH)
         }
     }
+
+    @Test fun newerSchoolReplacementCannotBeUndoneByDelayedPacket() {
+        val before = WearSnapshot(settings, emptyList(), Instant.ofEpochSecond(10))
+        val changed = WearSnapshot(settings.copy(school = "other.edupage.org", homeClass = "10.A"),
+            emptyList(), Instant.ofEpochSecond(11))
+        assertTrue(shouldAcceptSnapshot(before, changed))
+        assertFalse(shouldAcceptSnapshot(changed, before))
+    }
 }

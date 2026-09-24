@@ -15,6 +15,12 @@ bounded, display-ready dated snapshot; `WearProjection.kt` converts the phone's
 effective timetable revision and class-only lesson blocks into that contract.
 An explicit empty day means no published lessons; a missing date means it was not
 synced. No raw EduPage responses or private settings are sent to the watch.
+The phone publishes a bounded rolling two-week cache via one Data Layer item;
+its semantic digest suppresses unchanged hourly refreshes, with a daily
+freshness publication. The watch validates version and date bounds before an
+atomic replacement and ignores older publications. A manual watch request
+enqueues a cached-only phone worker; neither watch launch nor its receiver
+fetches EduPage. The watch UI is implemented in the following layer.
 
 One Android module deliberately avoids a backend, DI framework, ORM or OAuth account system. First launch has no built-in school: the user supplies a public EduPage host and time zone before any timetable request is made. Compose observes an immutable `StateFlow` in an Android ViewModel. The repository runs HTTPS and file operations on IO, serializes disk-cache access with a process-wide mutex, validates payloads before atomic replacement, and returns a stale snapshot when refresh fails. The ViewModel also keeps a bounded in-memory day cache so revisiting prefetched dates is immediate without flashing empty state.
 

@@ -94,3 +94,7 @@ object WearSnapshotCodec {
         return WearSnapshot(settings, days, Instant.parse(root.getString("publishedAt")))
     }
 }
+
+/** A newer publication replaces the whole snapshot, including its school identity. */
+fun shouldAcceptSnapshot(current: WearSnapshot?, incoming: WearSnapshot): Boolean =
+    current == null || !incoming.publishedAt.isBefore(current.publishedAt)
