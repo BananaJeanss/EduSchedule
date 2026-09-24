@@ -339,7 +339,7 @@ internal object InstallResultRouter {
             NotificationChannel(CHANNEL, localized(context, R.string.update_action_needed), NotificationManager.IMPORTANCE_DEFAULT)
         )
         val sessionId = result.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, 0)
-        val intent = Intent(context, InstallResultActivity::class.java)
+        val intent = Intent().setClass(context, InstallResultActivity::class.java)
             .putExtra(Intent.EXTRA_INTENT, InstallResultActivity.confirmationIntent(result))
             .putExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_PENDING_USER_ACTION)
         val pending = PendingIntent.getActivity(
