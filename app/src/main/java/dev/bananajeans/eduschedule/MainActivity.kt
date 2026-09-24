@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -28,6 +30,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.StrokeCap
@@ -116,6 +124,7 @@ class MainActivity : ComponentActivity() {
     val installCalendarOrExportMessage = stringResource(R.string.install_calendar_or_export)
     val scope = rememberCoroutineScope()
     var tab by rememberSaveable { mutableStateOf("Day") }
+    var weekFromEnd by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
     var settings by rememberSaveable { mutableStateOf(openSettingsInitially) }
     var showExport by remember { mutableStateOf(false) }
@@ -289,9 +298,16 @@ class MainActivity : ComponentActivity() {
                             if (timetable.weekNames.size > 1) Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 timetable.weekNames.forEachIndexed { i, name -> FilterChip(s.cycleWeek == i, { vm.cycle(i) }, { Text(name) }) }
                             }
-                            if (tab == "Day") DayScreen(timetable.lessonBlocksOn(s.date, s.selection, s.hidden, s.cycleWeek), s.date, s.zone,
-                                timetable.revision.name, { detail = DatedLesson(s.date, it) })
-                            else WeekScreen(s) { detail = it }
+                            if (tab == "Day") DaySwipeSurface(s.date, vm::date) {
+                                DayScreen(timetable.lessonBlocksOn(s.date, s.selection, s.hidden, s.cycleWeek), s.date, s.zone,
+                                    timetable.revision.name, { detail = DatedLesson(s.date, it) })
+                            } else WeekScreen(
+                                s = s,
+                                startAtEnd = weekFromEnd,
+                                onPreviousWeek = { weekFromEnd = true; vm.date(s.date.minusWeeks(1)) },
+                                onNextWeek = { weekFromEnd = false; vm.date(s.date.plusWeeks(1)) },
+                                onLesson = { detail = it }
+                            )
                         }
                     }
                 }
@@ -562,6 +578,27 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+@Composable
+fun DaySwipeSurface(date: LocalDate, onDateChange: (LocalDate) -> Unit, content: @Composable () -> Unit) {
+    val threshold = with(LocalDensity.current) { 72.dp.toPx() }
+    Box(Modifier.fillMaxSize().pointerInput(date, threshold) {
+        var distance = 0f
+        detectHorizontalDragGestures(
+            onDragStart = { distance = 0f },
+            onDragCancel = { distance = 0f },
+            onDragEnd = {
+                if (distance <= -threshold) onDateChange(date.plusDays(1))
+                else if (distance >= threshold) onDateChange(date.minusDays(1))
+                distance = 0f
+            },
+            onHorizontalDrag = { change, amount ->
+                distance += amount
+                change.consume()
+            }
+        )
+    }) { content() }
+}
+
 @Composable fun DayScreen(blocks: List<LessonBlock>, date: LocalDate, zone: String, revision: String, onLesson: (Lesson) -> Unit) {
     val locale = LocalConfiguration.current.locales[0]
     var now by remember { mutableStateOf(ZonedDateTime.now(ZoneId.of(zone))) }
@@ -745,11 +782,44 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-@Composable fun WeekScreen(s: ScheduleState, onLesson: (DatedLesson) -> Unit) {
+@Composable fun WeekScreen(
+    s: ScheduleState,
+    startAtEnd: Boolean = false,
+    onPreviousWeek: () -> Unit = {},
+    onNextWeek: () -> Unit = {},
+    onLesson: (DatedLesson) -> Unit
+) {
     val locale = LocalConfiguration.current.locales[0]
     val monday = s.date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-    // Wide, independently scrollable day columns keep real lesson names readable on phones.
-    Row(Modifier.fillMaxSize().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    val scroll = remember(monday) { ScrollState(0) }
+    val threshold = with(LocalDensity.current) { 72.dp.toPx() }
+    val previous by rememberUpdatedState(onPreviousWeek)
+    val next by rememberUpdatedState(onNextWeek)
+    LaunchedEffect(monday, startAtEnd) {
+        if (startAtEnd) scroll.scrollTo(Int.MAX_VALUE)
+    }
+    val edgeSwipe = remember(monday, scroll, threshold) {
+        object : NestedScrollConnection {
+            var distance = 0f
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                if (source != NestedScrollSource.UserInput || scroll.maxValue == 0) return Offset.Zero
+                distance = when {
+                    scroll.value == 0 && available.x > 0 -> (distance + available.x).coerceAtLeast(0f)
+                    scroll.value == scroll.maxValue && available.x < 0 -> (distance + available.x).coerceAtMost(0f)
+                    else -> 0f
+                }
+                if (distance >= threshold) { distance = 0f; previous() }
+                else if (distance <= -threshold) { distance = 0f; next() }
+                return Offset.Zero
+            }
+            override suspend fun onPostFling(consumed: androidx.compose.ui.unit.Velocity, available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
+                distance = 0f
+                return androidx.compose.ui.unit.Velocity.Zero
+            }
+        }
+    }
+    // The board scrolls through day columns; an extra drag past either edge changes weeks.
+    Row(Modifier.fillMaxSize().nestedScroll(edgeSwipe).horizontalScroll(scroll).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         (0L..6L).forEach { offset ->
             val date = monday.plusDays(offset); val snapshot = s.week[date]
             val blocks = snapshot?.timetable?.lessonBlocksOn(date,s.selection!!,s.hidden,s.cycleWeek).orEmpty()
