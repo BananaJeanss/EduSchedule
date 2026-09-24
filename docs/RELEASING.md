@@ -26,6 +26,8 @@ The app reads GitHub's latest stable release endpoint and compares numeric seman
 
 Debug builds have a separate application ID and are available from Android CI artifacts. Normal CI also assembles a minified unsigned release so release-only issues surface before signing credentials are supplied.
 
+The release workflow also builds and signs separate `EduSchedule-Wear-X.Y.Z.apk` and `.aab` artifacts with the same key and application ID on the watch. It verifies both APK signatures and includes both in the checksums and provenance. The phone's in-app updater deliberately selects the phone APK by exact filename. Install and update the Wear APK through the watch's supported install channel; the phone updater does not install it.
+
 ## Release review
 
 For theme and sheet changes, verify every preset and custom colors in light/dark mode, high-contrast text, wallpaper color switching, app restart, the widget setup screen, and a lesson sheet with short and long linked-entity lists on both gesture and three-button navigation. The Add to calendar action must be fully visible without dragging a short sheet.

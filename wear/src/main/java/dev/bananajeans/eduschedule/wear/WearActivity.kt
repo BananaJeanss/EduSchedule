@@ -1,15 +1,19 @@
 package dev.bananajeans.eduschedule.wear
 
 import android.content.BroadcastReceiver
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.Build
+import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,7 +50,10 @@ class WearActivity : ComponentActivity() {
     companion object { const val ACTION_CHANGED = "dev.bananajeans.eduschedule.wear.SNAPSHOT_CHANGED" }
     private var snapshot by mutableStateOf<WearSnapshot?>(null)
     private val receiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) { snapshot = WearCache.read(this@WearActivity) }
+        override fun onReceive(context: Context, intent: Intent) {
+            snapshot = WearCache.read(this@WearActivity)
+            requestReminderPermission()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,10 +66,24 @@ class WearActivity : ComponentActivity() {
         super.onStart()
         ContextCompat.registerReceiver(this, receiver, IntentFilter(ACTION_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED)
         snapshot = WearCache.read(this)
-        WearCache.loadLatest(this) { snapshot = WearCache.read(this) }
+        requestReminderPermission()
+        WearCache.loadLatest(this) {
+            snapshot = WearCache.read(this)
+            requestReminderPermission()
+        }
     }
 
     override fun onStop() { unregisterReceiver(receiver); super.onStop() }
+
+    private fun requestReminderPermission() {
+        if (Build.VERSION.SDK_INT < 33 || snapshot?.settings?.reminders != true ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        val prefs = getSharedPreferences("wear_permissions", MODE_PRIVATE)
+        if (!prefs.getBoolean("asked_notifications", false)) {
+            prefs.edit().putBoolean("asked_notifications", true).apply()
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+        }
+    }
 
     private fun requestSync() {
         Wearable.getNodeClient(this).connectedNodes.addOnSuccessListener { nodes ->
@@ -77,8 +98,8 @@ private fun localized(context: Context, settings: WearSettings?): Context {
     return context.createConfigurationContext(config)
 }
 
-private fun colors(settings: WearSettings?): Triple<Color, Color, Color> {
-    val dark = settings?.theme != "Light"
+private fun colors(settings: WearSettings?, systemDark: Boolean): Triple<Color, Color, Color> {
+    val dark = when (settings?.theme) { "Light" -> false; "Dark" -> true; else -> systemDark }
     fun parse(value: String, fallback: Color): Color =
         runCatching { Color(android.graphics.Color.parseColor(value)) }.getOrDefault(fallback)
     return when (settings?.palette) {
@@ -88,7 +109,9 @@ private fun colors(settings: WearSettings?): Triple<Color, Color, Color> {
             if (dark) Color(0xFF101F2D) else Color(0xFFF2F8FA), Color(0xFF90CAF9))
         "Custom" -> Triple(parse(settings.primary, Color(0xFFB5CEA8)),
             parse(settings.surface, Color(0xFF111511)), parse(settings.secondary, Color(0xFFAFCCB5)))
-        else -> Triple(Color(0xFFB5CEA8), Color(0xFF111511), Color(0xFFAFCCB5))
+        else -> Triple(if (dark) Color(0xFFB5CEA8) else Color(0xFF315B3D),
+            if (dark) Color(0xFF111511) else Color(0xFFF6F8F3),
+            if (dark) Color(0xFFAFCCB5) else Color(0xFF4C6954))
     }
 }
 
@@ -104,7 +127,7 @@ private fun colors(settings: WearSettings?): Triple<Color, Color, Color> {
     val today = LocalDate.now(snapshot?.settings?.zone ?: ZoneId.systemDefault())
     val shown = date ?: today
     val day = snapshot?.days?.firstOrNull { it.date == shown }
-    val (primary, background, secondary) = colors(snapshot?.settings)
+    val (primary, background, secondary) = colors(snapshot?.settings, isSystemInDarkTheme())
     val foreground = if (background.luminance() > .179f) Color.Black else Color.White
     val onPrimary = if (primary.luminance() > .179f) Color.Black else Color.White
     val scheme = MaterialTheme.colorScheme.copy(primary = primary, secondary = secondary,
