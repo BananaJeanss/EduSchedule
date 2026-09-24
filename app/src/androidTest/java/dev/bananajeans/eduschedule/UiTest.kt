@@ -1,8 +1,10 @@
 package dev.bananajeans.eduschedule
 import androidx.compose.ui.test.*
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.test.junit4.createComposeRule
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Assert.assertEquals
 import java.time.LocalDate
 import java.time.LocalTime
 class UiTest {
@@ -15,6 +17,23 @@ class UiTest {
         compose.onNodeWithText("12.B").assertDoesNotExist()
         compose.onNodeWithText("11.A").performClick()
         assert(selected == Selection(ScheduleKind.CLASS,"a"))
+    }
+    @Test fun daySwipesMoveOneDayInEitherDirection() {
+        val initial = LocalDate.of(2026, 9, 14)
+        var date by androidx.compose.runtime.mutableStateOf(initial)
+        compose.setContent {
+            EduTheme(dynamic = false) {
+                DaySwipeSurface(date, { date = it }) {
+                    androidx.compose.foundation.layout.Box(
+                        androidx.compose.ui.Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+        compose.onRoot().performTouchInput { swipeLeft() }
+        compose.runOnIdle { assertEquals(initial.plusDays(1), date) }
+        compose.onRoot().performTouchInput { swipeRight() }
+        compose.runOnIdle { assertEquals(initial, date) }
     }
     @Test fun emptyDayHasExplicitState() {
         compose.setContent { EduTheme(dynamic=false) { DayScreen(emptyList(),LocalDate.of(2026,9,14),"Europe/Tallinn","Test") {} } }
