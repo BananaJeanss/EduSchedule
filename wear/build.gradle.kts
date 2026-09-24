@@ -1,4 +1,7 @@
-plugins { alias(libs.plugins.android.application) }
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
+}
 android {
     namespace = "dev.bananajeans.eduschedule.wear"
     compileSdk = 37
@@ -15,10 +18,16 @@ android {
         release { isMinifyEnabled = true; isShrinkResources = true }
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+    buildFeatures { compose = true }
     lint { abortOnError = true }
 }
 kotlin { jvmToolchain(17) }
 dependencies {
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation("androidx.compose.foundation:foundation")
+    implementation(libs.activity)
+    implementation(libs.wear.compose.material3)
     implementation(project(":sync"))
     implementation(libs.wearable)
     implementation(libs.core)
