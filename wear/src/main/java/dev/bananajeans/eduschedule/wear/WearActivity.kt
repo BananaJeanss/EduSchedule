@@ -14,6 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -99,8 +100,8 @@ private fun localized(context: Context, settings: WearSettings?): Context {
     return context.createConfigurationContext(config)
 }
 
-private fun colors(settings: WearSettings?): Triple<Color, Color, Color> {
-    val dark = settings?.theme != "Light"
+private fun colors(settings: WearSettings?, systemDark: Boolean): Triple<Color, Color, Color> {
+    val dark = when (settings?.theme) { "Light" -> false; "Dark" -> true; else -> systemDark }
     fun parse(value: String, fallback: Color): Color =
         runCatching { Color(android.graphics.Color.parseColor(value)) }.getOrDefault(fallback)
     return when (settings?.palette) {
@@ -110,7 +111,9 @@ private fun colors(settings: WearSettings?): Triple<Color, Color, Color> {
             if (dark) Color(0xFF101F2D) else Color(0xFFF2F8FA), Color(0xFF90CAF9))
         "Custom" -> Triple(parse(settings.primary, Color(0xFFB5CEA8)),
             parse(settings.surface, Color(0xFF111511)), parse(settings.secondary, Color(0xFFAFCCB5)))
-        else -> Triple(Color(0xFFB5CEA8), Color(0xFF111511), Color(0xFFAFCCB5))
+        else -> Triple(if (dark) Color(0xFFB5CEA8) else Color(0xFF315B3D),
+            if (dark) Color(0xFF111511) else Color(0xFFF6F8F3),
+            if (dark) Color(0xFFAFCCB5) else Color(0xFF4C6954))
     }
 }
 
@@ -126,7 +129,7 @@ private fun colors(settings: WearSettings?): Triple<Color, Color, Color> {
     val today = LocalDate.now(snapshot?.settings?.zone ?: ZoneId.systemDefault())
     val shown = date ?: today
     val day = snapshot?.days?.firstOrNull { it.date == shown }
-    val (primary, background, secondary) = colors(snapshot?.settings)
+    val (primary, background, secondary) = colors(snapshot?.settings, isSystemInDarkTheme())
     val foreground = if (background.luminance() > .179f) Color.Black else Color.White
     val onPrimary = if (primary.luminance() > .179f) Color.Black else Color.White
     val scheme = MaterialTheme.colorScheme.copy(primary = primary, secondary = secondary,
