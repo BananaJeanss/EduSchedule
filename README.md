@@ -14,6 +14,7 @@ A native Android reader for public aSc / EduPage timetables. Built around the ne
 - Add a lesson through Android's calendar editor (including Google Calendar); export the displayed week as RFC 5545 `.ics` or spreadsheet `.csv` through the system file picker.
 - Opt-in alarm-backed class-start reminders that continue after the app process closes, suppress stale late deliveries, and include Mute 1h / Mute today actions, plus timetable-change and app-release notifications. In-app updates download the signed GitHub APK, verify its checksum/package/version/signing certificate, then hand it to Android for the required install confirmation.
 - Debug APK artifacts, release signing workflow, JVM tests, emulator UI tests, Android lint, CodeQL and Dependabot.
+- Wear OS companion for the saved home class: day and week schedules, synced appearance and settings, offline cache, class reminders and a next-class watch-face complication.
 
 First launch asks for a public `*.edupage.org` school address and time zone; no school is built in or contacted before setup. Android 8+ (API 26).
 
@@ -30,6 +31,8 @@ Use JDK 17 and the Android SDK. Install platform 37.0 and build tools 36.0.0. Se
 
 Debug installs separately as `dev.bananajeans.eduschedule.debug`. Release is `dev.bananajeans.eduschedule`. Unsigned release assembly is allowed for CI; publishing requires the signing workflow and secrets. See [release setup](docs/RELEASING.md).
 
+The Wear OS module requires API 30+. Install the phone and watch variants signed with the same key and application ID on paired devices. The watch displays only the phone's saved home class, and requests a refresh through the paired phone.
+
 ## Documentation
 
 - [Implementation plan and architecture](docs/ARCHITECTURE.md)
@@ -38,6 +41,7 @@ Debug installs separately as `dev.bananajeans.eduschedule.debug`. Release is `de
 - [Versioning and release checklist](RELEASES.md)
 - [Dependency verification](docs/DEPENDENCIES.md)
 - [Privacy](docs/PRIVACY.md)
+- [Wear OS setup, offline behavior and battery validation](docs/WEAR_OS.md)
 - [Design standards](DESIGN.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
