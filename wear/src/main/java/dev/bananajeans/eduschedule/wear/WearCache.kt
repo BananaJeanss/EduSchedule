@@ -33,7 +33,10 @@ object WearCache {
     fun loadLatest(context: Context, onLoaded: () -> Unit) {
         Wearable.getDataClient(context).dataItems.addOnSuccessListener { items ->
             try {
-                for (item in items) if (item.uri.path == PATH && accept(context, item.data)) onLoaded()
+                for (item in items) {
+                    val bytes = item.data ?: continue
+                    if (item.uri.path == PATH && accept(context, bytes)) onLoaded()
+                }
             } finally { items.release() }
         }
     }
@@ -41,7 +44,10 @@ object WearCache {
 
 class WearDataReceiver : WearableListenerService() {
     override fun onDataChanged(events: DataEventBuffer) {
-        for (event in events) if (event.type == DataEvent.TYPE_CHANGED &&
-            event.dataItem.uri.path == WearCache.PATH) WearCache.accept(this, event.dataItem.data)
+        for (event in events) {
+            val bytes = event.dataItem.data ?: continue
+            if (event.type == DataEvent.TYPE_CHANGED && event.dataItem.uri.path == WearCache.PATH)
+                WearCache.accept(this, bytes)
+        }
     }
 }
