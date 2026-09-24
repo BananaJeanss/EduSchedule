@@ -1,6 +1,8 @@
 package dev.bananajeans.eduschedule
 import androidx.compose.ui.test.*
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.createComposeRule
 import org.junit.Rule
 import org.junit.Test
