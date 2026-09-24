@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.os.Build
 import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -50,7 +49,6 @@ import java.util.Locale
 class WearActivity : ComponentActivity() {
     companion object { const val ACTION_CHANGED = "dev.bananajeans.eduschedule.wear.SNAPSHOT_CHANGED" }
     private var snapshot by mutableStateOf<WearSnapshot?>(null)
-    private val permission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             snapshot = WearCache.read(this@WearActivity)
@@ -83,7 +81,7 @@ class WearActivity : ComponentActivity() {
         val prefs = getSharedPreferences("wear_permissions", MODE_PRIVATE)
         if (!prefs.getBoolean("asked_notifications", false)) {
             prefs.edit().putBoolean("asked_notifications", true).apply()
-            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
         }
     }
 

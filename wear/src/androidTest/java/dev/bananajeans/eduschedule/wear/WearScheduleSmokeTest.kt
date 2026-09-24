@@ -18,7 +18,7 @@ class WearScheduleSmokeTest {
 
     @Before fun clearPreviousSnapshot() {
         rule.activity.deleteFile("schedule.json")
-        rule.activity.recreate()
+        rule.activity.runOnUiThread { rule.activity.recreate() }
         rule.waitForIdle()
     }
 
