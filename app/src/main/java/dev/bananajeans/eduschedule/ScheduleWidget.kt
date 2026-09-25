@@ -151,11 +151,8 @@ internal object ScheduleWidgets {
     fun publishPreviews(context: Context) {
         if (Build.VERSION.SDK_INT < 35) return
         val settings = context.getSharedPreferences(SETTINGS, Context.MODE_PRIVATE)
-        val now = System.currentTimeMillis()
-        val previous = settings.getLong("preview_published_at", 0L)
-        if (now >= previous && now - previous < 12 * 60 * 60 * 1000L) return
-        // The launcher may throttle this API; previewLayout remains the fallback.
-        settings.edit { putLong("preview_published_at", now) }
+        val configuration = context.resources.configuration
+        val signature = "v2:${BuildConfig.VERSION_CODE}:${configuration.locales.toLanguageTags()}:${configuration.uiMode}"
         val manager = AppWidgetManager.getInstance(context)
         listOf(
             ScheduleWidgetProvider::class.java to R.layout.widget_preview_today,
@@ -163,10 +160,16 @@ internal object ScheduleWidgets {
             UpcomingScheduleWidgetProvider::class.java to R.layout.widget_preview_upcoming,
             WeekScheduleWidgetProvider::class.java to R.layout.widget_preview_week
         ).forEach { (provider, layout) ->
-            runCatching {
-                manager.setWidgetPreview(ComponentName(context, provider),
-                    android.appwidget.AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN,
-                    RemoteViews(context.packageName, layout))
+            val key = "preview_${provider.simpleName}"
+            if (settings.getString(key, null) != signature) {
+                // Record success only. A throttled provider can retry on the next launch;
+                // complete previewImage artwork is available immediately either way.
+                val accepted = runCatching {
+                    manager.setWidgetPreview(ComponentName(context, provider),
+                        android.appwidget.AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN,
+                        RemoteViews(context.packageName, layout))
+                }.getOrDefault(false)
+                if (accepted) settings.edit { putString(key, signature) }
             }
         }
     }
@@ -414,3 +417,4 @@ internal fun WidgetConfigScreen(options: WidgetOptions, onChange: (WidgetOptions
         Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.widget_save)) }
     }
 }
+
