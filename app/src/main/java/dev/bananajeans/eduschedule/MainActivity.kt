@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -30,12 +29,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.StrokeCap
@@ -126,7 +119,6 @@ class MainActivity : ComponentActivity() {
     val installCalendarOrExportMessage = stringResource(R.string.install_calendar_or_export)
     val scope = rememberCoroutineScope()
     var tab by rememberSaveable { mutableStateOf("Day") }
-    var weekFromEnd by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
     var settings by rememberSaveable { mutableStateOf(openSettingsInitially) }
     var showExport by remember { mutableStateOf(false) }
@@ -188,7 +180,8 @@ class MainActivity : ComponentActivity() {
     }
     LaunchedEffect(s.message) { s.message?.let { snack.showSnackbar(it); vm.message(null) } }
     BackHandler(settings || tab != "Day") { if (settings) settings = false else tab = "Day" }
-    val timetable = s.snapshot?.timetable
+    val selectedSnapshot = s.snapshot ?: s.week[s.date] ?: s.previews[s.date]
+    val timetable = selectedSnapshot?.timetable
     val selectedName = s.selectionName
     Scaffold(
         snackbarHost = { SnackbarHost(snack) },
@@ -253,14 +246,14 @@ class MainActivity : ComponentActivity() {
                     permission.launch(Manifest.permission.POST_NOTIFICATIONS) else vm.notifications(true)
             }, ::requestUpdateInstall, ::open)
             else Column {
-                if (s.error != null) EmptyState(
+                if (s.error != null && s.selection == null) EmptyState(
                     stringResource(R.string.couldnt_load_date),
                     s.error,
                     stringResource(R.string.retry)
                 ) { vm.refresh(true) }
-                else if (timetable == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                else if (timetable == null && s.selection == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 else {
-                    if (s.snapshot.offline) Surface(color = MaterialTheme.colorScheme.tertiaryContainer) {
+                    if (selectedSnapshot?.offline == true) Surface(color = MaterialTheme.colorScheme.tertiaryContainer) {
                         Row(
                             Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -270,7 +263,7 @@ class MainActivity : ComponentActivity() {
                             Text(
                                 stringResource(
                                     R.string.offline_saved_at,
-                                    s.snapshot.fetched.atZone(ZoneId.of(s.zone))
+                                    selectedSnapshot.fetched.atZone(ZoneId.of(s.zone))
                                         .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", locale))
                                 ),
                                 style = MaterialTheme.typography.labelMedium
@@ -278,7 +271,10 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     when {
-                        tab == "Browse" || s.selection == null -> BrowseScreen(timetable, s.selection, s.home, { vm.select(it); if (s.home.isBlank() && it.kind == ScheduleKind.CLASS) vm.home(it.id); tab = "Day" })
+                        tab == "Browse" || s.selection == null -> {
+                            if (timetable != null) BrowseScreen(timetable, s.selection, s.home, { vm.select(it); if (s.home.isBlank() && it.kind == ScheduleKind.CLASS) vm.home(it.id); tab = "Day" })
+                            else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                        }
                         else -> {
                             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                                 FilledTonalIconButton(onClick = { vm.date(s.date.minusDays(if (tab == "Week") 7 else 1)) }) {
@@ -297,19 +293,35 @@ class MainActivity : ComponentActivity() {
                                     Text(stringResource(R.string.today))
                                 }
                             }
-                            if (timetable.weekNames.size > 1) Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (timetable != null && timetable.weekNames.size > 1) Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 timetable.weekNames.forEachIndexed { i, name -> FilterChip(s.cycleWeek == i, { vm.cycle(i) }, { Text(name) }) }
                             }
-                            if (tab == "Day") DaySwipeSurface(s.date, vm::date) {
-                                DayScreen(timetable.lessonBlocksOn(s.date, s.selection, s.hidden, s.cycleWeek), s.date, s.zone,
-                                    timetable.revision.name, { detail = DatedLesson(s.date, it) })
-                            } else WeekScreen(
-                                s = s,
-                                startAtEnd = weekFromEnd,
-                                onPreviousWeek = { weekFromEnd = true; vm.date(s.date.minusWeeks(1)) },
-                                onNextWeek = { weekFromEnd = false; vm.date(s.date.plusWeeks(1)) },
-                                onLesson = { detail = it }
-                            )
+                            key(tab, s.host) {
+                                val weekView = tab == "Week"
+                                val selected = if (weekView) s.date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)) else s.date
+                                DatePager(selected, onDateChange = { pageDate ->
+                                    vm.date(if (weekView) pageDate.plusDays(s.date.dayOfWeek.value - 1L) else pageDate)
+                                }, stepDays = if (weekView) 7 else 1) { pageDate ->
+                                    LaunchedEffect(pageDate, s.host, s.previewGeneration) {
+                                        vm.preview(if (weekView) (0L..6L).map(pageDate::plusDays) else listOf(pageDate))
+                                    }
+                                    if (weekView) {
+                                        val snapshots = s.previews.mapNotNull { (date, value) -> value?.let { date to it } }.toMap() + s.week + listOfNotNull(s.snapshot?.let { s.date to it }).toMap()
+                                        WeekScreen(s.copy(date = pageDate, week = snapshots),
+                                            startAtEnd = pageDate < selected, onLesson = { detail = it })
+                                    } else {
+                                        val snapshot = if (pageDate == s.date) selectedSnapshot else s.week[pageDate] ?: s.previews[pageDate]
+                                        if (snapshot != null) DayScreen(
+                                            snapshot.timetable.lessonBlocksOn(pageDate, s.selection, s.hidden, s.cycleWeek),
+                                            pageDate, s.zone, snapshot.timetable.revision.name,
+                                            onLesson = { detail = DatedLesson(pageDate, it) })
+                                        else SchedulePagePlaceholder(pageDate,
+                                            loading = (pageDate == s.date && s.loading) || pageDate !in s.previews,
+                                            error = s.error.takeIf { pageDate == s.date },
+                                            onRetry = { if (pageDate == s.date) vm.refresh(true) else vm.date(pageDate) })
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -580,27 +592,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-@Composable
-fun DaySwipeSurface(date: LocalDate, onDateChange: (LocalDate) -> Unit, content: @Composable () -> Unit) {
-    val threshold = with(LocalDensity.current) { 72.dp.toPx() }
-    Box(Modifier.fillMaxSize().pointerInput(date, threshold) {
-        var distance = 0f
-        detectHorizontalDragGestures(
-            onDragStart = { distance = 0f },
-            onDragCancel = { distance = 0f },
-            onDragEnd = {
-                if (distance <= -threshold) onDateChange(date.plusDays(1))
-                else if (distance >= threshold) onDateChange(date.minusDays(1))
-                distance = 0f
-            },
-            onHorizontalDrag = { change, amount ->
-                distance += amount
-                change.consume()
-            }
-        )
-    }) { content() }
-}
-
 @Composable fun DayScreen(blocks: List<LessonBlock>, date: LocalDate, zone: String, revision: String, onLesson: (Lesson) -> Unit) {
     val locale = LocalConfiguration.current.locales[0]
     var now by remember { mutableStateOf(ZonedDateTime.now(ZoneId.of(zone))) }
@@ -787,41 +778,16 @@ fun DaySwipeSurface(date: LocalDate, onDateChange: (LocalDate) -> Unit, content:
 @Composable fun WeekScreen(
     s: ScheduleState,
     startAtEnd: Boolean = false,
-    onPreviousWeek: () -> Unit = {},
-    onNextWeek: () -> Unit = {},
     onLesson: (DatedLesson) -> Unit
 ) {
     val locale = LocalConfiguration.current.locales[0]
     val monday = s.date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-    val scroll = remember(monday) { ScrollState(0) }
-    val threshold = with(LocalDensity.current) { 72.dp.toPx() }
-    val previous by rememberUpdatedState(onPreviousWeek)
-    val next by rememberUpdatedState(onNextWeek)
+    val scroll = remember(monday) { ScrollState(if (startAtEnd) Int.MAX_VALUE else 0) }
     LaunchedEffect(monday, startAtEnd) {
         if (startAtEnd) scroll.scrollTo(Int.MAX_VALUE)
     }
-    val edgeSwipe = remember(monday, scroll, threshold) {
-        object : NestedScrollConnection {
-            var distance = 0f
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                if (source != NestedScrollSource.UserInput || scroll.maxValue == 0) return Offset.Zero
-                distance = when {
-                    scroll.value == 0 && available.x > 0 -> (distance + available.x).coerceAtLeast(0f)
-                    scroll.value == scroll.maxValue && available.x < 0 -> (distance + available.x).coerceAtMost(0f)
-                    else -> 0f
-                }
-                if (distance >= threshold) { distance = 0f; previous() }
-                else if (distance <= -threshold) { distance = 0f; next() }
-                return Offset.Zero
-            }
-            override suspend fun onPostFling(consumed: androidx.compose.ui.unit.Velocity, available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
-                distance = 0f
-                return androidx.compose.ui.unit.Velocity.Zero
-            }
-        }
-    }
-    // The board scrolls through day columns; an extra drag past either edge changes weeks.
-    Row(Modifier.fillMaxSize().nestedScroll(edgeSwipe).horizontalScroll(scroll).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    // The child consumes scrolling through columns. At an edge, the pager receives the rest.
+    Row(Modifier.fillMaxSize().horizontalScroll(scroll, overscrollEffect = null).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         (0L..6L).forEach { offset ->
             val date = monday.plusDays(offset); val snapshot = s.week[date]
             val blocks = snapshot?.timetable?.lessonBlocksOn(date,s.selection!!,s.hidden,s.cycleWeek).orEmpty()
@@ -1161,3 +1127,4 @@ fun DaySwipeSurface(date: LocalDate, onDateChange: (LocalDate) -> Unit, content:
         Switch(checked, change)
     }
 }
+

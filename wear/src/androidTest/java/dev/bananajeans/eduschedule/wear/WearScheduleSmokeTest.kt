@@ -37,7 +37,8 @@ class WearScheduleSmokeTest {
             check(WearCache.accept(rule.activity, WearSnapshotCodec.encode(snapshot)))
             rule.activity.recreate()
         }
-        rule.onNodeWithText("09:00 Math").assertIsDisplayed()
+        // An ongoing lesson adds a localized "Now" suffix from 09:00–10:00 UTC.
+        rule.onNodeWithText("09:00 Math", substring = true).assertIsDisplayed()
         rule.onNodeWithText("Week").performClick()
         rule.onNodeWithText("Week").assertIsDisplayed()
     }

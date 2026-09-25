@@ -25,7 +25,7 @@ class UiTest {
         var date by androidx.compose.runtime.mutableStateOf(initial)
         compose.setContent {
             EduTheme(dynamic = false) {
-                DaySwipeSurface(date, { date = it }) {
+                DatePager(date, { date = it }) {
                     androidx.compose.foundation.layout.Box(
                         androidx.compose.ui.Modifier.fillMaxSize()
                     )
@@ -58,3 +58,4 @@ class UiTest {
         compose.onNodeWithText("12:34 now").assertIsDisplayed()
     }
 }
+

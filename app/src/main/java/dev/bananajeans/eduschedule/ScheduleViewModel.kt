@@ -18,6 +18,8 @@ data class ScheduleState(
     val selectionName: String? = null,
     val snapshot: Snapshot? = null,
     val week: Map<LocalDate, Snapshot> = emptyMap(),
+    val previews: Map<LocalDate, Snapshot?> = emptyMap(),
+    val previewGeneration: Int = 0,
     val loading: Boolean = false,
     val error: String? = null,
     val message: String? = null,
@@ -65,6 +67,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
     )
     val state = mutable.asStateFlow()
     private var job: Job? = null
+    private val previewJobs = mutableMapOf<LocalDate, Job>()
 
     init {
         Background.configure(app, preferences.notifications)
@@ -78,6 +81,41 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         mutable.update { it.copy(date = value, snapshot = hot, loading = hot == null, error = null) }
         if (hot != null) applySnapshot(hot)
         refresh()
+    }
+
+    /** Adjacent pages only read validated disk snapshots; a peek never starts network work. */
+    fun preview(dates: List<LocalDate>) {
+        val host = mutable.value.host
+        val generation = mutable.value.previewGeneration
+        if (host.isBlank()) return
+        dates.forEach { date ->
+            if (date in mutable.value.previews || previewJobs[date]?.isActive == true) return@forEach
+            previewJobs[date] = viewModelScope.launch {
+                try {
+                    val cached = dayCache[date] ?: mutable.value.week[date] ?: repository.loadCached(host, date)
+                    if (host == mutable.value.host && generation == mutable.value.previewGeneration) {
+                        mutable.update { state ->
+                            state.copy(previews = (state.previews + (date to cached)).entries
+                                .toList().takeLast(42).associate { it.toPair() })
+                        }
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    if (host == mutable.value.host && generation == mutable.value.previewGeneration) {
+                        mutable.update { it.copy(previews = it.previews + (date to null)) }
+                    }
+                } finally {
+                    if (generation == mutable.value.previewGeneration) previewJobs.remove(date)
+                }
+            }
+        }
+    }
+
+    private fun invalidatePreviews() {
+        previewJobs.values.toList().forEach { it.cancel() }
+        previewJobs.clear()
+        mutable.update { it.copy(previews = emptyMap(), previewGeneration = it.previewGeneration + 1) }
     }
 
     fun select(value: Selection) {
@@ -169,6 +207,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
             preferences.host = host
             preferences.zone = zoneId.id
             preferences.cycleWeek = 0
+            invalidatePreviews()
             dayCache.clear()
             mutable.update {
                 it.copy(
@@ -243,6 +282,7 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
                     }
                 }
                 mutable.update { it.copy(week = week) }
+                invalidatePreviews()
                 scheduleReminders()
                 ScheduleWidgets.refresh(getApplication())
                 WearPublisher.enqueue(getApplication())
@@ -365,3 +405,4 @@ class ScheduleViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 }
+

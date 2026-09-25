@@ -2,6 +2,7 @@ package dev.bananajeans.eduschedule
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -43,6 +44,26 @@ class ScheduleWidgetTest {
         }
     }
 
+    @Test fun everyPickerFallbackHasRenderedContentAndPreservesItsAspectRatio() {
+        val previews = listOf(R.drawable.widget_preview_today, R.drawable.widget_preview_next,
+            R.drawable.widget_preview_upcoming, R.drawable.widget_preview_week)
+        for (resource in previews) {
+            val bitmap = BitmapFactory.decodeResource(context.resources, resource)
+            assertNotNull("Preview must be complete bitmap artwork", bitmap)
+            assertTrue(bitmap.width >= 360)
+            val background = bitmap.getPixel(bitmap.width / 2, bitmap.height - 5)
+            // Sample inside the rounded surface, excluding its edge and the example caption.
+            var ink = 0
+            for (y in 40 until minOf(220, bitmap.height - 80)) {
+                for (x in 60 until bitmap.width - 60) {
+                    if (bitmap.getPixel(x, y) != background) ink++
+                }
+            }
+            assertTrue("Preview contains no title or lesson text", ink > 1000)
+            if (resource == R.drawable.widget_preview_next) assertTrue(bitmap.width > bitmap.height)
+        }
+    }
+
     @Test fun bordersRenderOnlyForSelectedStyle() {
         val colors = WidgetColors(Color.WHITE, Color.BLACK, Color.BLACK, Color.RED)
         val plain = widgetBackground(180, 180, colors, WidgetBorder.NONE, 1f)
@@ -56,3 +77,4 @@ class ScheduleWidgetTest {
         assertEquals(Color.WHITE, dashed.getPixel(90, 90))
     }
 }
+
