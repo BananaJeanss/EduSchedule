@@ -210,7 +210,7 @@ class MainActivity : ComponentActivity() {
                             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                                 DropdownMenuItem(text = { Text(stringResource(R.string.choose_schedule)) }, onClick = { menu = false; tab = "Browse" })
                                 if (s.home.isNotBlank()) DropdownMenuItem(text = { Text(stringResource(R.string.my_class)) }, onClick = { vm.select(Selection(ScheduleKind.CLASS,s.home)); menu = false; tab = "Day" })
-                                if (s.selection?.kind == ScheduleKind.CLASS) DropdownMenuItem(text = { Text(stringResource(R.string.make_this_my_class)) }, onClick = {
+                                if (s.selection?.kind == ScheduleKind.CLASS) DropdownMenuItem(text = { Text(stringResource(R.string.make_this_my_class)) }, enabled = canMakeDefaultClass(s.selection, s.home), onClick = {
                                     vm.home(s.selection.id)
                                     menu = false
                                     vm.message(defaultClassSavedMessage)
