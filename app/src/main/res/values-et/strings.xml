@@ -220,4 +220,6 @@
     <string name="widget_preview_next">Järgmine tund sinu salvestatud tunniplaanis</string>
     <string name="widget_preview_upcoming">Siin kuvatakse järgmised tunnid</string>
     <string name="widget_preview_week">Siin kuvatakse päevade tundide arv</string>
+    <string name="default_this_group">Määra vaikerühmaks</string>
+    <string name="default_group_saved">Vaikerühm salvestatud</string>
 </resources>

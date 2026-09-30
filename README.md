@@ -53,3 +53,5 @@ This project is independent of aSc and EduPage. No affiliation is implied. No lo
 
 EduSchedule is licensed under the MIT License. See [LICENSE](LICENSE).
 
+
+In a class schedule, tap a group lesson and use “Default this group” below “Add to calendar” to save its visibility preference. It hides the other groups in that parallel lesson block and shows the chosen group, including IDs sharing the same class-local label. Other visibility preferences and the saved home class stay intact. Settings → Visible groups can change the selection later.

@@ -114,6 +114,7 @@ class MainActivity : ComponentActivity() {
     val allowInstallsSettingsMessage = stringResource(R.string.allow_installs_settings)
     val noAppForLinkMessage = stringResource(R.string.no_app_for_link)
     val defaultClassSavedMessage = stringResource(R.string.default_class_saved)
+    val defaultGroupSavedMessage = stringResource(R.string.default_group_saved)
     val timetableLabel = stringResource(R.string.timetable)
     val calendarEventDescription = stringResource(R.string.calendar_event_description)
     val installCalendarOrExportMessage = stringResource(R.string.install_calendar_or_export)
@@ -383,7 +384,12 @@ class MainActivity : ComponentActivity() {
     }
     detail?.let { dated ->
         val l = dated.lesson
-        val links = timetable?.linkedSchedules(l).orEmpty()
+        val detailTimetable = (s.week[dated.date] ?: s.previews[dated.date]
+            ?: s.snapshot?.takeIf { s.date == dated.date })?.timetable
+        val links = detailTimetable?.linkedSchedules(l).orEmpty()
+        val defaultGroupHidden = s.selection?.let { selection ->
+            detailTimetable?.hiddenGroupsForDefault(dated.date, selection, l, s.hidden, s.cycleWeek)
+        }
         ModalBottomSheet(
             onDismissRequest = { detail = null },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -456,6 +462,16 @@ class MainActivity : ComponentActivity() {
                         vm.message(installCalendarOrExportMessage)
                     }
                 }) { Text(stringResource(R.string.add_to_calendar)) }
+                if (defaultGroupHidden != null) {
+                    OutlinedButton(
+                        enabled = defaultGroupHidden != s.hidden,
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            vm.groups(defaultGroupHidden)
+                            vm.message(defaultGroupSavedMessage)
+                        }
+                    ) { Text(stringResource(R.string.default_this_group)) }
+                }
             }
         }
     }
