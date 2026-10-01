@@ -75,7 +75,8 @@ private fun localized(context: Context, settings: WearSettings?): Context {
     }
     BackHandler(detailId != null || screen != "day" || dateEpoch != null, onBack = ::back)
     WearTheme(snapshot?.settings) {
-        AppScaffold {
+        Box(Modifier.fillMaxSize()) {
+        AppScaffold(timeText = {}) {
             SwipeToDismissBox(onDismissed = {
                 if (detailId != null || screen != "day" || dateEpoch != null) back() else (context as? Activity)?.finish()
             }) { isBackground ->
@@ -162,6 +163,9 @@ private fun localized(context: Context, settings: WearSettings?): Context {
                     }
                 }
             }
+        }
+        // A fixed native clock stays legible while the initially centered list/header scrolls.
+        TimeText()
         }
     }
 }
