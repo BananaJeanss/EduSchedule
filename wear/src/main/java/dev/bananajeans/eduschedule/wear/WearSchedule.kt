@@ -80,7 +80,9 @@ private fun localized(context: Context, settings: WearSettings?): Context {
                 if (isBackground) Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) else {
                     // Each destination/date owns its scroll state; entering details always starts at its title.
                     key(screen, shown, detailId) {
-                        WearList {
+                        val focusOnOpen = detail != null || (screen == "day" && detailId == null &&
+                            states.values.any { it == LessonState.Current || it == LessonState.Next })
+                        WearList(initialAnchor = if (focusOnOpen) 1 else -1) {
                             when {
                                 snapshot == null || snapshot.settings.homeClass.isBlank() -> {
                                     heading(strings.getString(R.string.day))
@@ -162,8 +164,8 @@ private fun localized(context: Context, settings: WearSettings?): Context {
     }
 }
 
-@Composable private fun WearList(content: TransformingLazyColumnScope.() -> Unit) {
-    val state = rememberTransformingLazyColumnState()
+@Composable private fun WearList(initialAnchor: Int = -1, content: TransformingLazyColumnScope.() -> Unit) {
+    val state = rememberTransformingLazyColumnState(initialAnchorItemIndex = initialAnchor)
     ScreenScaffold(scrollState = state) { padding ->
         TransformingLazyColumn(modifier = Modifier.fillMaxSize().testTag("wear-list"), state = state,
             contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
