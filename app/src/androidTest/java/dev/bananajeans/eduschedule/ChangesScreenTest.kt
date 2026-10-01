@@ -17,7 +17,9 @@ class ChangesScreenTest {
     private val lesson = ChangeLesson("a", "Math", 0, "1", "08:45", "09:30", "Teacher A", "101", "", emptyList(), "")
     private fun screenshot(name: String) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val directory = File(context.getExternalFilesDir(null), "change-screenshots").apply { mkdirs() }
+        val output = InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
+        val directory = File(output?.let { File(it) } ?: context.getExternalFilesDir(null)!!,
+            "change-screenshots").apply { mkdirs() }
         File(directory, "$name.png").outputStream().use {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
