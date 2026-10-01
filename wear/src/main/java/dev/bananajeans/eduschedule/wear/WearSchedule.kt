@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -141,8 +142,8 @@ private fun localized(context: Context, settings: WearSettings?): Context {
                                     } else if (lessons.isEmpty()) message(strings.getString(R.string.no_lessons))
                                     else {
                                         if (focus != null) lesson(focus, states.getValue(focus.id), strings) { detailId = focus.id }
-                                        val past = lessons.filter { states[it.id] == LessonState.Past }
-                                        lessons.filter { it.id != focus?.id && (showPast || states[it.id] != LessonState.Past) }.forEach { lesson ->
+                                        val past = if (shown == today) lessons.filter { states[it.id] == LessonState.Past } else emptyList()
+                                        lessons.filter { it.id != focus?.id && (shown != today || showPast || states[it.id] != LessonState.Past) }.forEach { lesson ->
                                             lesson(lesson, states.getValue(lesson.id), strings) { detailId = lesson.id }
                                         }
                                         if (past.isNotEmpty()) action(strings.getString(if (showPast) R.string.hide_earlier else R.string.show_earlier), "earlier", { showPast = !showPast })
@@ -219,9 +220,9 @@ private fun TransformingLazyColumnScope.lesson(lesson: WearLesson, state: Lesson
                 LessonState.Next -> R.string.next
                 else -> R.string.earlier
             }), style = MaterialTheme.typography.labelSmall)
-            Text(lesson.subjects.joinToString(" / "), style = MaterialTheme.typography.titleMedium)
+            Text(lesson.subjects.joinToString(" / "), style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(lessonTime(lesson), style = MaterialTheme.typography.bodyMedium)
-            if (lesson.room.isNotBlank()) Text(strings.getString(R.string.room_value, lesson.room), style = MaterialTheme.typography.bodySmall)
+            if (lesson.room.isNotBlank()) Text(strings.getString(R.string.room_value, lesson.room), style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

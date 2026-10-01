@@ -36,6 +36,7 @@ class WearLayoutTest {
     }
     @Test fun currentLessonIsGlanceableAndPastLessonsCanBeExpanded() {
         rule.setContent { WearSchedule(snapshot(), {}, clock) }
+        screenshot("day-on-open-dark")
         scrollTo("lesson-current")
         rule.onNodeWithText("Now").assertIsDisplayed()
         rule.onNodeWithText("Math").assertIsDisplayed()
@@ -92,6 +93,18 @@ class WearLayoutTest {
         screenshot("status-ocean-light")
         scrollTo("sync")
         rule.onNodeWithText("Sync now").assertIsDisplayed()
+    }
+    @Test fun previousDatesShowLessonsWithoutExpandingEarlierLessons() {
+        val past = snapshot().copy(days = snapshot().days.map { it.copy(date = it.date.minusDays(1)) })
+        rule.setContent { WearSchedule(past, {}, clock) }
+        scrollTo("week")
+        rule.onNodeWithTag("week").performClick()
+        scrollTo("date-${date.minusDays(1)}")
+        rule.onNodeWithTag("date-${date.minusDays(1)}").performClick()
+        scrollTo("lesson-current")
+        rule.onNodeWithText("Math").assertIsDisplayed()
+        rule.onNodeWithTag("earlier").assertDoesNotExist()
+        screenshot("previous-day-dark")
     }
     @Test fun emptyWatchOffersSetupAndSync() {
         rule.setContent { WearSchedule(null, {}, clock) }
