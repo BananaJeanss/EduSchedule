@@ -53,6 +53,23 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 
 class MainActivity : ComponentActivity() {
+    private var openSettingsRequest by mutableStateOf(false)
+    private var changeReportRequest by mutableStateOf<String?>(null)
+    private var notificationGeneration by mutableLongStateOf(0)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        openSettingsRequest = intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)
+        changeReportRequest = intent.getStringExtra(EXTRA_CHANGE_REPORT_ID)
+        notificationGeneration++
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putLong("notificationGeneration", notificationGeneration)
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onResume() {
         super.onResume()
         InstallResultRouter.resumed(this)
@@ -71,16 +88,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState); enableEdgeToEdge()
         lifecycleScope.launch(Dispatchers.IO) { ScheduleWidgets.publishPreviews(applicationContext) }
-        val openSettings = intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)
+        openSettingsRequest = intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)
+        changeReportRequest = intent.getStringExtra(EXTRA_CHANGE_REPORT_ID)
+        notificationGeneration = savedInstanceState?.getLong("notificationGeneration") ?: 0
         setContent {
             val vm: ScheduleViewModel = viewModel()
             val state by vm.state.collectAsStateWithLifecycle()
-            EduTheme(state.theme, state.dynamic, state.palette, state.customColors) { ScheduleApp(vm, state, openSettings) }
+            EduTheme(state.theme, state.dynamic, state.palette, state.customColors) { ScheduleApp(vm, state, openSettingsRequest, changeReportRequest, notificationGeneration) }
         }
     }
 
     companion object {
         const val EXTRA_OPEN_SETTINGS = "open_settings"
+        const val EXTRA_CHANGE_REPORT_ID = "change_report_id"
     }
 }
 @Composable fun EduTheme(theme: String = "System", dynamic: Boolean = true, palette: String = "Default", customColors: ThemeColors = ThemeColors(), content: @Composable () -> Unit) {
@@ -103,7 +123,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable fun ScheduleApp(vm: ScheduleViewModel, s: ScheduleState, openSettingsInitially: Boolean = false) {
+@Composable fun ScheduleApp(vm: ScheduleViewModel, s: ScheduleState, openSettingsInitially: Boolean = false, openChangesInitially: String? = null, notificationGeneration: Long = 0) {
     if (s.host.isBlank()) { SetupScreen(vm, s.zone, s.language); return }
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
@@ -120,11 +140,12 @@ class MainActivity : ComponentActivity() {
     val installCalendarOrExportMessage = stringResource(R.string.install_calendar_or_export)
     val scope = rememberCoroutineScope()
     var tab by rememberSaveable { mutableStateOf("Day") }
-    var menu by remember { mutableStateOf(false) }
-    var settings by rememberSaveable { mutableStateOf(openSettingsInitially) }
-    var showExport by remember { mutableStateOf(false) }
-    var showDate by remember { mutableStateOf(false) }
-    var detail by remember { mutableStateOf<DatedLesson?>(null) }
+    var menu by remember(notificationGeneration) { mutableStateOf(false) }
+    var settings by rememberSaveable(openSettingsInitially, notificationGeneration) { mutableStateOf(openSettingsInitially) }
+    var changesId by rememberSaveable(openChangesInitially, notificationGeneration) { mutableStateOf(openChangesInitially) }
+    var showExport by remember(notificationGeneration) { mutableStateOf(false) }
+    var showDate by remember(notificationGeneration) { mutableStateOf(false) }
+    var detail by remember(notificationGeneration) { mutableStateOf<DatedLesson?>(null) }
     var pendingExport by remember { mutableStateOf("") }
     val snack = remember { SnackbarHostState() }
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri ->
@@ -180,7 +201,9 @@ class MainActivity : ComponentActivity() {
         }
     }
     LaunchedEffect(s.message) { s.message?.let { snack.showSnackbar(it); vm.message(null) } }
-    BackHandler(settings || tab != "Day") { if (settings) settings = false else tab = "Day" }
+    BackHandler(changesId != null || settings || tab != "Day") {
+        if (changesId != null) changesId = null else if (settings) settings = false else tab = "Day"
+    }
     val selectedSnapshot = s.snapshot ?: s.week[s.date] ?: s.previews[s.date]
     val timetable = selectedSnapshot?.timetable
     val selectedName = s.selectionName
@@ -189,17 +212,17 @@ class MainActivity : ComponentActivity() {
         topBar = {
             TopAppBar(title = { Column {
                 Text(
-                    if (settings) stringResource(R.string.settings) else selectedName ?: stringResource(R.string.your_timetable),
+                    if (changesId != null) stringResource(R.string.timetable_changes) else if (settings) stringResource(R.string.settings) else selectedName ?: stringResource(R.string.your_timetable),
                     fontWeight = FontWeight.SemiBold
                 )
-                if (!settings) Text(s.host.substringBefore('.'), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (!settings && changesId == null) Text(s.host.substringBefore('.'), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } }, navigationIcon = {
-                if (settings) IconButton(onClick = { settings = false }) {
+                if (settings || changesId != null) IconButton(onClick = { if (changesId != null) changesId = null else settings = false }) {
                     Glyph("back", stringResource(R.string.back))
                 }
             },
                 actions = {
-                    if (!settings) {
+                    if (!settings && changesId == null) {
                         IconButton(onClick = { vm.refresh(true) }, enabled = !s.loading) {
                             if (s.loading) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                             else Glyph("refresh", stringResource(R.string.refresh_timetable))
@@ -225,7 +248,7 @@ class MainActivity : ComponentActivity() {
                 })
         },
         bottomBar = {
-            if (!settings) NavigationBar {
+            if (!settings && changesId == null) NavigationBar {
                 listOf(
                     Triple("Day", "day", R.string.day),
                     Triple("Week", "week", R.string.week),
@@ -242,7 +265,8 @@ class MainActivity : ComponentActivity() {
         }
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
-            if (settings) SettingsScreen(s, vm, {
+            if (changesId != null) ChangesScreen(changesId!!, s.zone)
+            else if (settings) SettingsScreen(s, vm, {
                 if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                     permission.launch(Manifest.permission.POST_NOTIFICATIONS) else vm.notifications(true)
             }, ::requestUpdateInstall, ::open)
@@ -1143,4 +1167,5 @@ class MainActivity : ComponentActivity() {
         Switch(checked, change)
     }
 }
+
 

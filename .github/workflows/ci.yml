@@ -60,12 +60,18 @@ jobs:
           api-level: 35
           arch: x86_64
           disable-animations: true
-          script: ./gradlew :app:connectedDebugAndroidTest --no-configuration-cache --stacktrace
+          script: ./gradlew :app:connectedDebugAndroidTest --no-configuration-cache --stacktrace -Pandroid.enableAdditionalTestOutput=true -Pandroid.testInstrumentationRunnerArguments.additionalTestOutputDir=/sdcard/Android/media/dev.bananajeans.eduschedule.debug/additional_test_output
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: ui-reports
           path: app/build/reports/androidTests/
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: change-screen-previews
+          path: app/build/outputs/connected_android_test_additional_output/**/*.png
+          if-no-files-found: error
   wear-ui:
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -96,3 +102,4 @@ jobs:
         with:
           name: wear-ui-reports
           path: wear/build/reports/androidTests/
+

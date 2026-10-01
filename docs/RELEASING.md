@@ -43,3 +43,6 @@ For localization changes, test English, Estonian and System default from both fi
 An APK that compiles is not proof these device behaviors passed.
 
 For default groups, verify the lesson-sheet action appears below Add to calendar for parallel class groups, becomes disabled after saving, survives restart, and updates Day/Week, exports, reminders, widgets and Wear through the existing group-preference path. Check changing the selection through Visible groups, duplicate labels and unrelated groups.
+
+
+For timetable-change notifications, confirm a silent first baseline, room/time/teacher changes, added/removed lessons, and unchanged data with regenerated card IDs. Tap notifications with the app closed and already open; check system/top-app-bar Back, rotation, English/Estonian, dark/light themes, large fonts and offline reopening. An expired report must show an explicit unavailable state. JVM and emulator regression tests exercise the comparison, durable store and readable cards. Android CI captures comparison-screen PNGs for visual review.

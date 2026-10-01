@@ -222,4 +222,28 @@
     <string name="widget_preview_week">Siin kuvatakse päevade tundide arv</string>
     <string name="default_this_group">Määra vaikerühmaks</string>
     <string name="default_group_saved">Vaikerühm salvestatud</string>
+    <string name="timetable_changes">Tunniplaani muudatused</string>
+    <string name="changes_unavailable">See võrdlus ei ole enam saadaval</string>
+    <string name="changes_unavailable_body">Salvestatud võrdlus võib olla aegunud. Praeguse tunniplaani vaatamiseks mine tagasi.</string>
+    <string name="changes_detected_at">Tuvastatud %1$s</string>
+    <string name="changes_effective_from">Tunniplaan kehtib alates %1$s</string>
+    <string name="changes_cycle">Tsükli nädal: %1$s</string>
+    <string name="changes_regular_notice">Avaldatud tunniplaani muudatused. Igapäevased asendused ja tundide ärajäämised võivad erineda.</string>
+    <string name="lesson_added">Tund lisatud</string>
+    <string name="lesson_removed">Tund eemaldatud</string>
+    <string name="lesson_changed">Tund muudetud</string>
+    <string name="changes_before">Enne</string>
+    <string name="changes_now">Nüüd</string>
+    <string name="changes_not_published">Pole avaldatud</string>
+    <string name="changes_day">Päev</string>
+    <string name="changes_time">Aeg</string>
+    <string name="changes_period">Tunni number</string>
+    <string name="changes_subject">Õppeaine</string>
+    <string name="changes_whole_class">Kogu klass</string>
+    <string name="changes_field_changed">%1$s · muudetud</string>
+    <plurals name="timetable_change_count">
+        <item quantity="one">%1$d tunnimuudatus</item>
+        <item quantity="other">%1$d tunnimuudatust</item>
+    </plurals>
 </resources>
+

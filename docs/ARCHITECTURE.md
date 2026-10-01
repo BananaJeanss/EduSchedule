@@ -58,3 +58,8 @@ The PackageInstaller session reports status to an explicit, non-exported broadca
 
 
 In a class schedule, tap a group lesson and use “Default this group” below “Add to calendar” to save its visibility preference. It hides the other groups in that parallel lesson block and shows the chosen group, including IDs sharing the same class-local label. Other visibility preferences and the saved home class stay intact. Settings → Visible groups can change the selection later.
+
+
+## Timetable changes
+
+`TimetableChanges.kt` compares compact recurring class snapshots, ignoring regenerated editor IDs and input order. The same current hidden-group and cycle-week filters apply to both snapshots. Exact display matches are removed first; only unambiguous pairs become changes. `ChangeStore.kt` atomically stores a baseline per school/class and up to 20 immutable comparison reports independently of the live timetable cache. Background refresh skips offline responses, establishes a silent first baseline, and saves a report before posting an explicit notification intent. `ChangesScreen.kt` loads the report off the main thread and presents localized Before/Now cards; missing reports have an explicit fallback. `MainActivity` routes cold and warm notification launches and retains navigation across recreation.

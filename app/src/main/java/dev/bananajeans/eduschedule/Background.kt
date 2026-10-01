@@ -16,7 +16,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.work.*
 import kotlinx.coroutines.CancellationException
-import java.security.MessageDigest
 import java.time.*
 import java.util.concurrent.TimeUnit
 
@@ -98,23 +97,19 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
 
             if (snapshot.offline) return Result.retry()
 
-            val lessons = snapshot.timetable.lessons.filter {
-                it.belongsTo(Selection(ScheduleKind.CLASS, preferences.home))
-            }
-            val signature = MessageDigest.getInstance("SHA-256")
-                .digest(lessons.toString().toByteArray())
-                .joinToString("") { "%02x".format(it) }
-            val state = applicationContext.getSharedPreferences("background", Context.MODE_PRIVATE)
-            val key = "${preferences.host}:${preferences.home}"
-            val previous = state.getString(key, null)
-            if (previous != null && previous != signature) {
+            val report = ChangeStore(applicationContext).record(
+                preferences.host, preferences.home, snapshot.timetable,
+                preferences.hiddenGroups, preferences.cycleWeek
+            )
+            if (report != null) {
                 notify(
                     AppLocale.string(applicationContext, preferences.language, R.string.timetable_updated),
                     AppLocale.string(applicationContext, preferences.language, R.string.timetable_updated_body),
-                    1
+                    1,
+                    changeReportId = report.id
                 )
             }
-            state.edit { putString(key, signature) }
+            val state = applicationContext.getSharedPreferences("background", Context.MODE_PRIVATE)
 
             if (System.currentTimeMillis() - state.getLong("updateCheck", 0) > TimeUnit.DAYS.toMillis(1)) {
                 try {
@@ -143,7 +138,7 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
         }
     }
 
-    private fun notify(title: String, text: String, id: Int, openUpdates: Boolean = false) {
+    private fun notify(title: String, text: String, id: Int, openUpdates: Boolean = false, changeReportId: String? = null) {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         val channel = "timetable_changes"
@@ -159,6 +154,8 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
             .setClass(applicationContext, MainActivity::class.java)
             .setPackage(applicationContext.packageName)
             .putExtra(MainActivity.EXTRA_OPEN_SETTINGS, openUpdates)
+            .putExtra(MainActivity.EXTRA_CHANGE_REPORT_ID, changeReportId)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         val pending = PendingIntent.getActivity(
             applicationContext,
             id,
@@ -190,3 +187,4 @@ class ReminderRescheduleReceiver : BroadcastReceiver() {
         Background.refreshNow(context)
     }
 }
+
