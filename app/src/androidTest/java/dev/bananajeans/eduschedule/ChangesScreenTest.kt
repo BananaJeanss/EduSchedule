@@ -41,7 +41,8 @@ class ChangesScreenTest {
         compose.setContent { EduTheme(theme = "Dark", dynamic = false) { ChangesContent(report, "Europe/Tallinn") } }
         compose.onNodeWithText("Lesson added").assertIsDisplayed()
         screenshot("changes-added-dark")
-        compose.onNodeWithText("Lesson removed").performScrollTo().assertIsDisplayed()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Lesson removed"))
+        compose.onNodeWithText("Lesson removed").assertIsDisplayed()
         screenshot("changes-removed-dark")
     }
     @Test fun longDetailsRemainReadableAtLargeFontSize() {
