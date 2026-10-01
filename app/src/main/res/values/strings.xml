@@ -225,4 +225,28 @@
     <string name="widget_preview_week">Daily lesson counts appear here</string>
     <string name="default_this_group">Default this group</string>
     <string name="default_group_saved">Default group saved</string>
+    <string name="timetable_changes">Timetable changes</string>
+    <string name="changes_unavailable">This comparison is no longer available</string>
+    <string name="changes_unavailable_body">The saved comparison may have expired. Go back to view your current timetable.</string>
+    <string name="changes_detected_at">Detected %1$s</string>
+    <string name="changes_effective_from">Timetable valid from %1$s</string>
+    <string name="changes_cycle">Cycle week: %1$s</string>
+    <string name="changes_regular_notice">Changes to your published regular timetable. Daily substitutions and cancellations may differ.</string>
+    <string name="lesson_added">Lesson added</string>
+    <string name="lesson_removed">Lesson removed</string>
+    <string name="lesson_changed">Lesson changed</string>
+    <string name="changes_before">Before</string>
+    <string name="changes_now">Now</string>
+    <string name="changes_not_published">Not published</string>
+    <string name="changes_day">Day</string>
+    <string name="changes_time">Time</string>
+    <string name="changes_period">Period</string>
+    <string name="changes_subject">Subject</string>
+    <string name="changes_whole_class">Whole class</string>
+    <string name="changes_field_changed">%1$s · changed</string>
+    <plurals name="timetable_change_count">
+        <item quantity="one">%1$d lesson change</item>
+        <item quantity="other">%1$d lesson changes</item>
+    </plurals>
 </resources>
+

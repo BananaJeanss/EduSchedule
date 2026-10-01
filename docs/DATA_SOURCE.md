@@ -42,4 +42,7 @@ The public regular timetable is not guaranteed to include substitutions, cancell
 
 The committed fixture is synthetic. It covers split groups, duplicate group ids, bell/day overrides, block-style periods, conventional short double periods, cycle weeks, and unknown times. Raw real-school responses are not committed.
 
-In a class schedule, tap a group lesson and use “Default this group” below “Add to calendar” to save its visibility preference. It hides the other groups in that parallel lesson block and shows the chosen group, including IDs sharing the same class-local label. Other visibility preferences and the saved home class stay intact. Settings → Visible groups can change the selection later.
+
+## Change comparisons
+
+Change notifications compare the published recurring lessons of the saved class in the selected cycle week and visible groups. They are not a substitutions/cancellation feed. Metadata-only revision changes and regenerated card IDs do not trigger an alert. A comparison retains its original detection timestamp and revision effective date; later timetable fetches do not rewrite it. Changing school/class starts an independent baseline, and hidden groups are applied equally to both snapshots. The first refresh after installing this feature is silent because earlier releases retained only a hash, not before-details.
