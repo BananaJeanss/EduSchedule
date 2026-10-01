@@ -56,3 +56,5 @@ The PackageInstaller session reports status to an explicit, non-exported broadca
 - English and Estonian interfaces are supported; source-provided school, subject, teacher, room and revision names remain exactly as published by EduPage.
 - Device/emulator visual and accessibility review is a release gate; passing compilation alone does not establish production readiness.
 
+
+In a class schedule, tap a group lesson and use “Default this group” below “Add to calendar” to save its visibility preference. It hides the other groups in that parallel lesson block and shows the chosen group, including IDs sharing the same class-local label. Other visibility preferences and the saved home class stay intact. Settings → Visible groups can change the selection later.

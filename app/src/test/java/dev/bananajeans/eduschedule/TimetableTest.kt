@@ -49,6 +49,35 @@ class TimetableTest {
         assertEquals(2, blocks.single().lessons.size)
         assertEquals(listOf("Art, design; studio", "Design"), blocks.single().subjects)
     }
+    @Test fun defaultGroupPreservesUnrelatedFiltersAndExpandsDuplicateLabels() {
+        val t = timetable()
+        val chosen = t.lessons.first { it.day == 0 && it.period == "4" }
+        val alternative = chosen.copy(id = "alt", groupIds = listOf("g2"), group = "Group 2")
+        val wholeClass = chosen.copy(id = "whole", period = "5", groupIds = emptyList(), group = "")
+        val table = t.copy(
+            lessons = listOf(chosen, alternative, wholeClass),
+            groups = mapOf("*1" to listOf(Entity("g1", "Group 1"), Entity("g1-copy", "Group 1"),
+                Entity("g2", "Group 2"), Entity("g2-copy", "Group 2"), Entity("language", "Language")))
+        )
+        val selection = Selection(ScheduleKind.CLASS, "*1")
+        val hidden = table.hiddenGroupsForDefault(revision.from, selection, chosen,
+            setOf("g1", "g1-copy", "language", "other-class"))!!
+        assertEquals(setOf("g2", "g2-copy", "language", "other-class"), hidden)
+        assertEquals(listOf(chosen, wholeClass), table.lessonsOn(revision.from, selection, hidden))
+        assertEquals(hidden, table.hiddenGroupsForDefault(revision.from, selection, chosen, hidden))
+        assertEquals(setOf("g1", "g1-copy", "language", "other-class"),
+            table.hiddenGroupsForDefault(revision.from, selection, alternative, hidden))
+        assertNull(table.hiddenGroupsForDefault(revision.from, selection, wholeClass, hidden))
+        assertNull(table.hiddenGroupsForDefault(revision.from, Selection(ScheduleKind.TEACHER, "-1"), chosen, hidden))
+    }
+    @Test fun defaultGroupDoesNotHideAnotherCycleOrSeparateLessonSlot() {
+        val t = timetable()
+        val chosen = t.lessons.first { it.day == 0 && it.period == "4" }
+        val otherCycle = chosen.copy(id = "cycle", groupIds = listOf("g2"), weeks = "01")
+        val otherSlot = chosen.copy(id = "slot", groupIds = listOf("g3"), period = "5")
+        val table = t.copy(lessons = listOf(chosen, otherCycle, otherSlot))
+        assertNull(table.hiddenGroupsForDefault(revision.from, Selection(ScheduleKind.CLASS, "*1"), chosen, emptySet()))
+    }
     @Test fun duplicateGroupIdsDoNotRepeatLabels() {
         val raw = javaClass.getResource("/timetable.json")!!.readText().replace("\"groupids\":[\"g1\"]", "\"groupids\":[\"g1\",\"g1\",\"g1\"]")
         val lesson = EduPageParser.parse(raw, revision).lessons.first { it.period == "4" }

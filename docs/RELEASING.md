@@ -41,3 +41,5 @@ For the updater specifically, install an older **signed production** APK on a ph
 For localization changes, test English, Estonian and System default from both first-run setup and Settings. Confirm the activity recreates into the selected locale; weekday/month names, notifications, reminder actions, calendar descriptions and CSV headers follow it; and source-provided timetable names remain unchanged. Unit tests enforce translation-key and format-placeholder parity, but device review is still required for truncation and layout regressions.
 
 An APK that compiles is not proof these device behaviors passed.
+
+For default groups, verify the lesson-sheet action appears below Add to calendar for parallel class groups, becomes disabled after saving, survives restart, and updates Day/Week, exports, reminders, widgets and Wear through the existing group-preference path. Check changing the selection through Visible groups, duplicate labels and unrelated groups.

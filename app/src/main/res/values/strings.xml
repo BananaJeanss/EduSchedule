@@ -223,4 +223,6 @@
     <string name="widget_preview_next">Next lesson from your saved timetable</string>
     <string name="widget_preview_upcoming">The next lessons appear here</string>
     <string name="widget_preview_week">Daily lesson counts appear here</string>
+    <string name="default_this_group">Default this group</string>
+    <string name="default_group_saved">Default group saved</string>
 </resources>
