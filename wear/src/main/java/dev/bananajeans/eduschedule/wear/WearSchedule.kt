@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
@@ -167,7 +169,8 @@ private fun localized(context: Context, settings: WearSettings?): Context {
 @Composable private fun WearList(initialAnchor: Int = -1, content: TransformingLazyColumnScope.() -> Unit) {
     val state = rememberTransformingLazyColumnState(initialAnchorItemIndex = initialAnchor)
     ScreenScaffold(scrollState = state) { padding ->
-        TransformingLazyColumn(modifier = Modifier.fillMaxSize().testTag("wear-list"), state = state,
+        // Reserve the clock's band even when an initially centered lesson pushes the header up.
+        TransformingLazyColumn(modifier = Modifier.fillMaxSize().padding(top = 24.dp).clipToBounds().testTag("wear-list"), state = state,
             contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
     }
 }
