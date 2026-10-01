@@ -22,6 +22,7 @@ import java.time.format.TextStyle
 fun ChangesScreen(reportId: String, zone: String) {
     val context = LocalContext.current
     val result by produceState<Pair<Boolean, ChangeReport?>>(false to null, reportId) {
+        value = false to null
         value = true to ChangeStore(context).load(reportId)
     }
     if (!result.first) Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
@@ -96,19 +97,25 @@ private fun LessonVersion(label: String, lesson: ChangeLesson, other: ChangeLess
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(label, style = MaterialTheme.typography.titleSmall)
         val day = DayOfWeek.of(lesson.day + 1).getDisplayName(TextStyle.FULL, locale)
-        DetailValue(stringResource(R.string.changes_day), day, other != null && lesson.day != other.day)
+        val time = if (lesson.start == null || lesson.end == null) notPublished else "${lesson.start} – ${lesson.end}"
+        Text("$day · $time", style = MaterialTheme.typography.bodyLarge)
+        if (other != null && lesson.day != other.day)
+            Text(stringResource(R.string.changes_field_changed, stringResource(R.string.changes_day)),
+                style = MaterialTheme.typography.labelMedium)
+        if (other != null && (lesson.start != other.start || lesson.end != other.end))
+            Text(stringResource(R.string.changes_field_changed, stringResource(R.string.changes_time)),
+                style = MaterialTheme.typography.labelMedium)
         if (other != null && lesson.subject != other.subject)
             DetailValue(stringResource(R.string.changes_subject), lesson.subject, true)
-        DetailValue(stringResource(R.string.changes_time),
-            if (lesson.start == null || lesson.end == null) notPublished else "${lesson.start} – ${lesson.end}",
-            other != null && (lesson.start != other.start || lesson.end != other.end))
-        DetailValue(stringResource(R.string.changes_period), lesson.period.ifBlank { notPublished },
-            other != null && lesson.period != other.period)
-        DetailValue(stringResource(R.string.csv_room), lesson.room.ifBlank { notPublished }, other != null && lesson.room != other.room)
-        DetailValue(stringResource(R.string.csv_teacher), lesson.teacher.ifBlank { notPublished }, other != null && lesson.teacher != other.teacher)
-        if (lesson.group.isNotBlank() || other?.group?.isNotBlank() == true)
-            DetailValue(stringResource(R.string.group), lesson.group.ifBlank { stringResource(R.string.changes_whole_class) },
-                other != null && lesson.group != other.group)
+        if (lesson.start == null || (other != null && lesson.period != other.period))
+            DetailValue(stringResource(R.string.changes_period), lesson.period.ifBlank { notPublished },
+                other != null && lesson.period != other.period)
+        if ((other == null && lesson.room.isNotBlank()) || (other != null && lesson.room != other.room))
+            DetailValue(stringResource(R.string.csv_room), lesson.room.ifBlank { notPublished }, other != null)
+        if ((other == null && lesson.teacher.isNotBlank()) || (other != null && lesson.teacher != other.teacher))
+            DetailValue(stringResource(R.string.csv_teacher), lesson.teacher.ifBlank { notPublished }, other != null)
+        if ((other == null && lesson.group.isNotBlank()) || (other != null && lesson.group != other.group))
+            DetailValue(stringResource(R.string.group), lesson.group.ifBlank { stringResource(R.string.changes_whole_class) }, other != null)
     }
 }
 
