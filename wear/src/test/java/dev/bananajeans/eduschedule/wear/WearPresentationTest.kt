@@ -25,7 +25,7 @@ class WearPresentationTest {
         assertEquals(setOf(LessonState.Past), lessonStates(lessons, today.minusDays(1), today, LocalTime.of(9, 10)).values.toSet())
         assertEquals(setOf(LessonState.Upcoming), lessonStates(lessons, today.plusDays(1), today, LocalTime.of(9, 10)).values.toSet())
     }
-    @Test funParallelCurrentLessonsRemainCurrent() {
+    @Test fun parallelCurrentLessonsRemainCurrent() {
         val parallel = lessons + lesson("parallel", "09:00", "09:45")
         val states = lessonStates(parallel, today, today, LocalTime.of(9, 20))
         assertEquals(LessonState.Current, states["first"])

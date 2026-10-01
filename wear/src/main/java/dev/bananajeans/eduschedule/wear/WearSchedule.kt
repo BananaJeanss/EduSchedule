@@ -67,7 +67,9 @@ private fun localized(context: Context, settings: WearSettings?): Context {
     val detail = day?.lessons?.firstOrNull { it.id == detailId }
     val states = lessonStates(day?.lessons.orEmpty(), shown, today, time.toLocalTime())
     fun goToday() { detailId = null; dateEpoch = null; screen = "day" }
-    fun back() { if (detailId != null) detailId = null else goToday() }
+    fun back() {
+        if (detailId != null) detailId = null else if (screen != "day") screen = "day" else goToday()
+    }
     BackHandler(detailId != null || screen != "day" || dateEpoch != null, onBack = ::back)
     WearTheme(snapshot?.settings) {
         AppScaffold {
@@ -129,8 +131,7 @@ private fun localized(context: Context, settings: WearSettings?): Context {
                                     action(strings.getString(R.string.today), "today", ::goToday)
                                 }
                                 else -> {
-                                    heading(shown.format(DateTimeFormatter.ofPattern("EEE d MMM", locale)))
-                                    message(snapshot.settings.homeClass, compact = true)
+                                    heading(shown.format(DateTimeFormatter.ofPattern("EEE d MMM", locale)), snapshot.settings.homeClass)
                                     val lessons = day?.lessons.orEmpty().sortedWith(compareBy(nullsLast()) { it.start })
                                     val focus = lessons.firstOrNull { states[it.id] == LessonState.Current }
                                         ?: lessons.firstOrNull { states[it.id] == LessonState.Next }
@@ -168,18 +169,21 @@ private fun localized(context: Context, settings: WearSettings?): Context {
     }
 }
 
-private fun TransformingLazyColumnScope.heading(text: String) = item {
+private fun TransformingLazyColumnScope.heading(text: String, secondary: String? = null) = item {
     val spec = rememberTransformationSpec()
     ListHeader(modifier = Modifier.fillMaxWidth().transformedHeight(this, spec).minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding), transformation = SurfaceTransformation(spec)) {
-        Text(text, textAlign = TextAlign.Center)
+        Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+            Text(text, textAlign = TextAlign.Center)
+            if (secondary != null) Text(secondary, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
+        }
     }
 }
 
-private fun TransformingLazyColumnScope.message(text: String, compact: Boolean = false) = item {
+private fun TransformingLazyColumnScope.message(text: String) = item {
     // ListHeader supplies transformation and centered, round-safe text padding.
     val spec = rememberTransformationSpec()
     ListHeader(modifier = Modifier.fillMaxWidth().transformedHeight(this, spec), transformation = SurfaceTransformation(spec)) {
-        Text(text, style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium,
+        Text(text, style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onBackground)
     }
 }
