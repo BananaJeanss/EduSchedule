@@ -46,3 +46,5 @@ For default groups, verify the lesson-sheet action appears below Add to calendar
 
 
 For timetable-change notifications, confirm a silent first baseline, room/time/teacher changes, added/removed lessons, and unchanged data with regenerated card IDs. Tap notifications with the app closed and already open; check system/top-app-bar Back, rotation, English/Estonian, dark/light themes, large fonts and offline reopening. An expired report must show an explicit unavailable state. JVM and emulator regression tests exercise the comparison, durable store and readable cards. Android CI captures comparison-screen PNGs for visual review.
+
+For Wear layout changes, review the small/large round `wear-previews-*` CI artifacts and check a physical round watch with normal/large fonts, English/Estonian, all palettes including custom light/dark, long subjects/rooms, swipe Back, crown/bezel scrolling, date selection → Today, midnight/current-lesson rollover, cached offline restart and refreshed lesson details. Compilation and emulator screenshots do not establish physical-device visual or battery results.

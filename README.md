@@ -14,7 +14,7 @@ A native Android reader for public aSc / EduPage timetables. Built around the ne
 - Add a lesson through Android's calendar editor (including Google Calendar); export the displayed week as RFC 5545 `.ics` or spreadsheet `.csv` through the system file picker.
 - Opt-in alarm-backed class-start reminders that continue after the app process closes, suppress stale late deliveries, and include Mute 1h / Mute today actions, plus timetable-change and app-release notifications. In-app updates download the signed GitHub APK, verify its checksum/package/version/signing certificate, then hand it to Android for the required install confirmation.
 - Debug APK artifacts, release signing workflow, JVM tests, emulator UI tests, Android lint, CodeQL and Dependabot.
-- Wear OS companion for the saved home class: day and week schedules, synced appearance and settings, offline cache, class reminders and a next-class watch-face complication.
+- Wear OS companion for the saved home class: round-screen day and week schedules with current/next lesson cards, synced appearance and settings, offline cache, class reminders and a next-class watch-face complication.
 
 First launch asks for a public `*.edupage.org` school address and time zone; no school is built in or contacted before setup. Android 8+ (API 26).
 
