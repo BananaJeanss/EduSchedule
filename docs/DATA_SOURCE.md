@@ -46,3 +46,5 @@ The committed fixture is synthetic. It covers split groups, duplicate group ids,
 ## Change comparisons
 
 Change notifications compare the published recurring lessons of the saved class in the selected cycle week and visible groups. They are not a substitutions/cancellation feed. Metadata-only revision changes and regenerated card IDs do not trigger an alert. A comparison retains its original detection timestamp and revision effective date; later timetable fetches do not rewrite it. Changing school/class starts an independent baseline, and hidden groups are applied equally to both snapshots. The first refresh after installing this feature is silent because earlier releases retained only a hash, not before-details.
+
+Wear lesson state labels (Now, Next, Earlier) describe cached lesson times in the saved school time zone. They do not imply live substitutions or connectivity. A missing time is shown as unknown; it is not treated as a completed lesson on the current date.

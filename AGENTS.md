@@ -31,3 +31,7 @@ Update README, docs/ARCHITECTURE.md, docs/DATA_SOURCE.md and docs/RELEASING.md w
 ## UI changes
 
 Follow [`DESIGN.md`](DESIGN.md) for Material 3 components, Material Symbols, spacing, navigation, state handling, copy, and accessibility standards.
+
+## Pull request screenshots
+
+Every future PR must include screenshots in its description when the change has a visible result (phone or Wear UI, widgets, themes, notifications, or other visual output). Use actual screenshots from the changed build and embed them directly so reviewers can inspect them without downloading CI artifacts. Add before/after images when they help explain a visual change, label relevant device/theme/language/font settings, and use synthetic or sanitized data. For changes with no visual output, mark screenshots as not applicable and briefly explain why. Follow the screenshot review requirements in DESIGN.md and the PR template.

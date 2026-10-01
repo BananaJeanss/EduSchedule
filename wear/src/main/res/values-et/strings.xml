@@ -16,4 +16,21 @@
     <string name="complication_label">EduSchedule järgmine tund</string>
     <string name="complication_empty">Tunde pole</string>
     <string name="complication_sync">Ava EduSchedule</string>
+
+    <string name="day">Päev</string>
+    <string name="lesson">Tund</string>
+    <string name="lesson_unavailable">Seda tundi pole enam salvestatud tunniplaanis.</string>
+    <string name="room">Ruum</string>
+    <string name="teacher">Õpetaja</string>
+    <string name="group">Rühm</string>
+    <string name="school">Kool</string>
+    <string name="home_class">Vaikeklass</string>
+    <string name="regular_timetable">Tavaline tunniplaan</string>
+    <string name="next">Järgmine</string>
+    <string name="earlier">Varasem</string>
+    <string name="show_earlier">Näita varasemaid tunde</string>
+    <string name="hide_earlier">Peida varasemad tunnid</string>
+    <string name="finished_today">Kõik avaldatud tunnid on lõppenud.</string>
+    <string name="room_value">Ruum %1$s</string>
+    <plurals name="lesson_count"><item quantity="one">%d tund</item><item quantity="other">%d tundi</item></plurals>
 </resources>

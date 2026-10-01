@@ -16,4 +16,21 @@
     <string name="complication_label">EduSchedule next class</string>
     <string name="complication_empty">No classes</string>
     <string name="complication_sync">Open EduSchedule</string>
+
+    <string name="day">Day</string>
+    <string name="lesson">Lesson</string>
+    <string name="lesson_unavailable">This lesson is no longer in the saved timetable.</string>
+    <string name="room">Room</string>
+    <string name="teacher">Teacher</string>
+    <string name="group">Group</string>
+    <string name="school">School</string>
+    <string name="home_class">Home class</string>
+    <string name="regular_timetable">Regular timetable</string>
+    <string name="next">Next</string>
+    <string name="earlier">Earlier</string>
+    <string name="show_earlier">Show earlier lessons</string>
+    <string name="hide_earlier">Hide earlier lessons</string>
+    <string name="finished_today">All published lessons have ended.</string>
+    <string name="room_value">Room %1$s</string>
+    <plurals name="lesson_count"><item quantity="one">%d lesson</item><item quantity="other">%d lessons</item></plurals>
 </resources>

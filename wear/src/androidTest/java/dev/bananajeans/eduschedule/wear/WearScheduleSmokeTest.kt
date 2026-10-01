@@ -1,7 +1,12 @@
 package dev.bananajeans.eduschedule.wear
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -24,6 +29,7 @@ class WearScheduleSmokeTest {
 
     @Test fun unpairedWatchExplainsPhoneSetup() {
         rule.onNodeWithText("Set up EduSchedule on your phone.").assertIsDisplayed()
+        rule.onNodeWithTag("wear-list").performScrollToNode(hasTestTag("sync"))
         rule.onNodeWithText("Sync now").assertIsDisplayed()
     }
 
@@ -37,9 +43,15 @@ class WearScheduleSmokeTest {
             check(WearCache.accept(rule.activity, WearSnapshotCodec.encode(snapshot)))
             rule.activity.recreate()
         }
-        // An ongoing lesson adds a localized "Now" suffix from 09:00–10:00 UTC.
-        rule.onNodeWithText("09:00 Math", substring = true).assertIsDisplayed()
-        rule.onNodeWithText("Week").performClick()
+        // Past lessons are collapsed on launch; reveal them independent of the test clock.
+        rule.onNodeWithTag("wear-list").performScrollToNode(hasText("Show earlier lessons") or hasText("Math"))
+        if (rule.onAllNodesWithText("Show earlier lessons").fetchSemanticsNodes().isNotEmpty()) {
+            rule.onNodeWithText("Show earlier lessons").performClick()
+        }
+        rule.onNodeWithTag("wear-list").performScrollToNode(hasText("Math"))
+        rule.onNodeWithText("Math").assertIsDisplayed()
+        rule.onNodeWithTag("wear-list").performScrollToNode(hasTestTag("week"))
+        rule.onNodeWithTag("week").performClick()
         rule.onNodeWithText("Week").assertIsDisplayed()
     }
 }

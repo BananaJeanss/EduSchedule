@@ -73,6 +73,10 @@ jobs:
           path: app/build/outputs/connected_android_test_additional_output/**/*.png
           if-no-files-found: error
   wear-ui:
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [wearos_small_round, wearos_large_round]
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -94,12 +98,18 @@ jobs:
           api-level: 33
           target: android-wear
           arch: x86_64
-          profile: wearos_square
+          profile: ${{ matrix.profile }}
           disable-animations: true
-          script: ./gradlew :wear:connectedDebugAndroidTest --no-configuration-cache --stacktrace
+          script: ./gradlew :wear:connectedDebugAndroidTest --no-configuration-cache --stacktrace -Pandroid.enableAdditionalTestOutput=true -Pandroid.testInstrumentationRunnerArguments.additionalTestOutputDir=/sdcard/Android/media/dev.bananajeans.eduschedule.debug/additional_test_output
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: wear-ui-reports
+          name: wear-ui-reports-${{ matrix.profile }}
           path: wear/build/reports/androidTests/
 
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: wear-previews-${{ matrix.profile }}
+          path: wear/build/outputs/connected_android_test_additional_output/**/*.png
+          if-no-files-found: error

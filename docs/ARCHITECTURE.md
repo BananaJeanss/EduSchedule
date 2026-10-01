@@ -20,7 +20,16 @@ its semantic digest suppresses unchanged hourly refreshes, with a daily
 freshness publication. The watch validates version and date bounds before an
 atomic replacement and ignores older publications. A manual watch request
 enqueues a cached-only phone worker; neither watch launch nor its receiver
-fetches EduPage. The watch UI is implemented in the following layer.
+fetches EduPage. `WearSchedule.kt` uses Wear Material 3 AppScaffold/ScreenScaffold, TimeText and a
+TransformingLazyColumn with component surface transformations and round-safe padding.
+Destination/date/detail keys isolate scroll state. Saveable route/date/lesson IDs
+preserve navigation across recreation; Today clears the selected date, and both
+system Back and swipe dismissal return through the same route logic. A lifecycle-bound
+minute tick updates current/next states and midnight without background polling.
+`WearPresentation.kt` classifies current/next/past lessons; earlier lessons can be
+expanded and unknown times stay visible. `WearTheme.kt` maps the complete Wear
+color scheme from phone presets/custom colors, with watch dynamic colors for the
+Default palette where supported. Details resolve lesson IDs from the latest cache.
 
 One Android module deliberately avoids a backend, DI framework, ORM or OAuth account system. First launch has no built-in school: the user supplies a public EduPage host and time zone before any timetable request is made. Compose observes an immutable `StateFlow` in an Android ViewModel. The repository runs HTTPS and file operations on IO, serializes disk-cache access with a process-wide mutex, validates payloads before atomic replacement, and returns a stale snapshot when refresh fails. The ViewModel also keeps a bounded in-memory day cache so revisiting prefetched dates is immediate without flashing empty state.
 
