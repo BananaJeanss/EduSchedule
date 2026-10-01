@@ -140,12 +140,12 @@ class MainActivity : ComponentActivity() {
     val installCalendarOrExportMessage = stringResource(R.string.install_calendar_or_export)
     val scope = rememberCoroutineScope()
     var tab by rememberSaveable { mutableStateOf("Day") }
-    var menu by remember { mutableStateOf(false) }
+    var menu by remember(notificationGeneration) { mutableStateOf(false) }
     var settings by rememberSaveable(openSettingsInitially, notificationGeneration) { mutableStateOf(openSettingsInitially) }
     var changesId by rememberSaveable(openChangesInitially, notificationGeneration) { mutableStateOf(openChangesInitially) }
-    var showExport by remember { mutableStateOf(false) }
-    var showDate by remember { mutableStateOf(false) }
-    var detail by remember { mutableStateOf<DatedLesson?>(null) }
+    var showExport by remember(notificationGeneration) { mutableStateOf(false) }
+    var showDate by remember(notificationGeneration) { mutableStateOf(false) }
+    var detail by remember(notificationGeneration) { mutableStateOf<DatedLesson?>(null) }
     var pendingExport by remember { mutableStateOf("") }
     val snack = remember { SnackbarHostState() }
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri ->

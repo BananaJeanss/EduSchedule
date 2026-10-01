@@ -37,10 +37,13 @@ class ChangeNotificationNavigationTest {
                 compose.onNodeWithText("Timetable changes").assertDoesNotExist()
                 scenario.recreate()
                 compose.onNodeWithText("Timetable changes").assertDoesNotExist()
+                compose.onNodeWithContentDescription("More options").performClick()
+                compose.onNodeWithText("Settings").assertIsDisplayed()
                 context.startActivity(notification())
                 compose.waitUntil(15_000) {
                     compose.onAllNodesWithText("Timetable changes").fetchSemanticsNodes().isNotEmpty()
                 }
+                compose.onNodeWithText("Settings").assertDoesNotExist()
                 compose.onNodeWithContentDescription("Back").performClick()
                 compose.onNodeWithText("Timetable changes").assertDoesNotExist()
             }
