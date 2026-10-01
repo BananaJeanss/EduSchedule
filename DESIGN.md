@@ -137,6 +137,10 @@ Use Material component motion/default transitions. Add custom motion only when i
 - Do not commit real student names, credentials, authenticated responses, or private timetable data.
 - Parser/UI regression fixtures must be synthetic and sanitized.
 
+## Pull request screenshots
+
+All future PRs must include screenshots when applicable. Embed actual screenshots of the changed build in the PR description for changes to phone or Wear screens, widgets, themes, notifications, or other visual output; links to downloadable CI artifacts alone are insufficient. Use before/after images when they make the change clearer. Include the states and device sizes, themes, languages or large-font settings affected by the change, with concise labels. Inspect the images for clipping, overlap, contrast and alignment before opening or updating the PR. Use synthetic or sanitized data and keep embedded image URLs durable. If the change has no visual output, state that screenshots are not applicable and briefly explain why.
+
 ## Review checklist
 
 For user-visible changes, verify:
@@ -150,4 +154,5 @@ For user-visible changes, verify:
 - actionable controls have accessible semantics;
 - UI copy is necessary and concise;
 - narrow phone layouts remain usable;
-- relevant unit/UI tests and screenshots are updated.
+- relevant unit/UI tests and screenshots are updated;
+- applicable screenshots are embedded in the PR description with useful labels, or the PR explains why screenshots are not applicable.

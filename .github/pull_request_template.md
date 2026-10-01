@@ -9,9 +9,13 @@ Describe the change and why it is needed.
 - [ ] `./gradlew connectedDebugAndroidTest` when an emulator/device is relevant
 - [ ] Manual testing completed where appropriate
 
-## UI changes
+## Screenshots
 
-Add screenshots or screen recordings for user-visible UI changes.
+Screenshots are required for every PR with a visible result, including phone/Wear UI, widgets, themes and notifications. Embed actual images from the changed build here; CI artifact download links alone are insufficient. Include before/after views where helpful, label relevant device/theme/language/font settings, and use synthetic or sanitized data.
+
+- [ ] Applicable screenshots are embedded and visually inspected, or screenshots are marked not applicable below with a brief reason.
+
+Add screenshots here, or write “Not applicable” and explain why.
 
 ## Security / privacy
 
