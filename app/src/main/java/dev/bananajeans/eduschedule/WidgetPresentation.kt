@@ -24,7 +24,7 @@ internal fun scheduleWidgetViews(
     val density = context.resources.displayMetrics.density
     val padding = ((if (compact) 12 else 16) * density).toInt()
     views.setViewPadding(R.id.widget_content, padding, padding, padding, padding)
-    val showTitle = !compact || heightDp >= 100 || fontScale <= 1.3f
+    val showTitle = !compact || heightDp >= 36 + 44 * fontScale
     views.setViewVisibility(R.id.widget_title, if (showTitle) View.VISIBLE else View.GONE)
     views.setInt(R.id.widget_empty, "setMaxLines", if (compact) 1 else 2)
     views.removeAllViews(R.id.widget_rows)
@@ -47,7 +47,9 @@ internal fun scheduleWidgetViews(
             (48 * fontScale * context.resources.displayMetrics.density).toInt())
         item.setTextViewText(R.id.widget_time, row.time)
         item.setViewVisibility(R.id.widget_time, if (row.time.isBlank()) View.GONE else View.VISIBLE)
-        item.setTextViewText(R.id.widget_subject, row.subject)
+        item.setTextViewText(R.id.widget_subject,
+            if (compact && options.mode == WidgetMode.WEEK && row.details.isNotBlank())
+                "${row.subject} · ${row.details}" else row.subject)
         item.setTextViewText(R.id.widget_details, details)
         item.setViewVisibility(R.id.widget_details, if (details.isBlank()) View.GONE else View.VISIBLE)
         item.setTextColor(R.id.widget_time, colors.text)

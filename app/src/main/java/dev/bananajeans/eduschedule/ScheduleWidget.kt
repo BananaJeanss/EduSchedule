@@ -13,7 +13,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
 import android.widget.RemoteViews
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -237,9 +236,10 @@ open class ScheduleWidgetProvider : AppWidgetProvider() {
                     if (options.rooms && first.roomNames.isNotBlank() && !block.isSplit) add(first.roomNames)
                     if (options.teachers && first.teacherNames.isNotBlank() && !block.isSplit) add(first.teacherNames)
                 }.joinToString(" · ")
-                return WidgetRow(block.start?.toString() ?: "—", subject,
-                    listOfNotNull(day?.format(DateTimeFormatter.ofPattern("EEE d", context.resources.configuration.locales[0])),
-                        details.takeIf { it.isNotBlank() }).joinToString(" · "))
+                val datedSubject = day?.let {
+                    "${it.format(DateTimeFormatter.ofPattern("EEE d", context.resources.configuration.locales[0]))} · $subject"
+                } ?: subject
+                return WidgetRow(block.start?.toString() ?: "—", datedSubject, details)
             }
             return when (options.mode) {
                 WidgetMode.TODAY -> blocks(date)?.take(4)?.map { line(it) }

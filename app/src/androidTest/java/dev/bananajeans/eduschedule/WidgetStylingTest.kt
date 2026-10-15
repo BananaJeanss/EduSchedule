@@ -100,6 +100,9 @@ class WidgetStylingTest {
             assertEquals(colors.secondaryText, normal.findViewById<TextView>(R.id.widget_details).currentTextColor)
             assertEquals(2, render(240, 1.5f).findViewById<LinearLayout>(R.id.widget_rows).childCount)
             assertEquals(1, render(100).findViewById<LinearLayout>(R.id.widget_rows).childCount)
+            val compactWeek = scheduleWidgetViews(context, WidgetOptions(mode = WidgetMode.WEEK), colors,
+                180, 100, listOf(WidgetRow(subject = "Mon 14", details = "6 lessons")), "").apply(context, host)
+            assertEquals("Mon 14 · 6 lessons", compactWeek.findViewById<TextView>(R.id.widget_subject).text.toString())
             val empty = render(128, data = emptyList())
             assertEquals(View.VISIBLE, empty.findViewById<View>(R.id.widget_empty).visibility)
             assertEquals(0, empty.findViewById<LinearLayout>(R.id.widget_rows).childCount)
