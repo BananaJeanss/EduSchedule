@@ -46,3 +46,5 @@ For default groups, verify the lesson-sheet action appears below Add to calendar
 
 
 For timetable-change notifications, confirm a silent first baseline, room/time/teacher changes, added/removed lessons, and unchanged data with regenerated card IDs. Tap notifications with the app closed and already open; check system/top-app-bar Back, rotation, English/Estonian, dark/light themes, large fonts and offline reopening. An expired report must show an explicit unavailable state. JVM and emulator regression tests exercise the comparison, durable store and readable cards. Android CI captures comparison-screen PNGs for visual review.
+
+Widget styling regression: run `WidgetStylingTest` and inspect its `widget-screenshots` output (actual RemoteViews beside an in-app lesson card in Default light, Catppuccin dark and Ocean light at 1.5× font). Also verify compact launcher sizes, all modes, empty state, per-widget palette overrides and borders.

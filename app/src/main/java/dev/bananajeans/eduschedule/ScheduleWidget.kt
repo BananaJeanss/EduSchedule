@@ -13,25 +13,22 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
 import android.widget.RemoteViews
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.platform.LocalDensity
+import android.widget.FrameLayout
 import androidx.core.content.edit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -61,7 +58,7 @@ internal fun WidgetMode.label(): Int = when (this) {
     WidgetMode.WEEK -> R.string.widget_week
 }
 
-internal data class WidgetColors(val surface: Int, val text: Int, val accent: Int, val outline: Int)
+internal data class WidgetColors(val surface: Int, val text: Int, val accent: Int, val outline: Int, val secondaryText: Int = text)
 
 internal fun widgetColors(context: Context, prefs: Preferences, options: WidgetOptions): WidgetColors {
     val dark = prefs.theme == "Dark" ||
@@ -80,7 +77,7 @@ internal fun widgetColors(context: Context, prefs: Preferences, options: WidgetO
         themeScheme(palette, dark, prefs.customColors)
     }
     return WidgetColors(scheme.surfaceContainer.toArgb(), scheme.onSurface.toArgb(),
-        scheme.primary.toArgb(), scheme.outline.toArgb())
+        scheme.primary.toArgb(), scheme.outline.toArgb(), scheme.onSurfaceVariant.toArgb())
 }
 
 /** Launcher-safe rounded surface, sized to the widget; never fetches a timetable. */
@@ -152,7 +149,7 @@ internal object ScheduleWidgets {
         if (Build.VERSION.SDK_INT < 35) return
         val settings = context.getSharedPreferences(SETTINGS, Context.MODE_PRIVATE)
         val configuration = context.resources.configuration
-        val signature = "v2:${BuildConfig.VERSION_CODE}:${configuration.locales.toLanguageTags()}:${configuration.uiMode}"
+        val signature = "v3:${BuildConfig.VERSION_CODE}:${configuration.locales.toLanguageTags()}:${configuration.uiMode}"
         val manager = AppWidgetManager.getInstance(context)
         listOf(
             ScheduleWidgetProvider::class.java to R.layout.widget_preview_today,
@@ -204,37 +201,16 @@ open class ScheduleWidgetProvider : AppWidgetProvider() {
                 val repository = Repository(context)
                 ids.forEach { id -> runCatching {
                     val options = ScheduleWidgets.options(context, id)
-                    val views = RemoteViews(context.packageName, R.layout.widget_schedule)
-                    val title = localized.getString(options.mode.label())
-                    val colors = widgetColors(localized, prefs, options)
                     val size = manager.getAppWidgetOptions(id)
-                    val width = size.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180).coerceIn(100, 400)
-                    val heightDp = size.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 180).coerceIn(80, 300)
-                    // A one-pixel-per-dp bitmap stays below the launcher RemoteViews bitmap budget.
-                    views.setImageViewBitmap(R.id.widget_background,
-                        widgetBackground(width, heightDp, colors, options.border, 1f))
-                    views.setTextColor(R.id.widget_title, colors.accent)
-                    listOf(R.id.widget_row_1, R.id.widget_row_2, R.id.widget_row_3, R.id.widget_row_4).forEach {
-                        views.setTextColor(it, colors.text)
-                    }
-                    views.setTextViewText(R.id.widget_title, title)
+                    val width = size.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180).coerceIn(100, 600)
+                    val heightDp = size.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 180).coerceIn(80, 600)
                     val rows = runCatching {
                         if (prefs.host.isBlank() || prefs.home.isBlank()) emptyList()
                         else widgetRows(repository, prefs, today, now, options, localized)
                     }.getOrDefault(emptyList())
                     val empty = if (prefs.home.isBlank()) R.string.widget_choose_class else R.string.widget_no_lessons
-                    val text = rows.ifEmpty { listOf(localized.getString(empty)) }
-                    val fittingRows = when {
-                        heightDp < 120 -> 1
-                        heightDp < 160 -> 2
-                        heightDp < 210 -> 3
-                        else -> 4
-                    }
-                    val visible = text.take(minOf(options.maxRows, fittingRows))
-                    listOf(R.id.widget_row_1, R.id.widget_row_2, R.id.widget_row_3, R.id.widget_row_4).forEachIndexed { index, viewId ->
-                        views.setViewVisibility(viewId, if (index < visible.size) View.VISIBLE else View.GONE)
-                        if (index < visible.size) views.setTextViewText(viewId, visible[index])
-                    }
+                    val views = scheduleWidgetViews(localized, options, widgetColors(localized, prefs, options),
+                        width, heightDp, rows, localized.getString(empty))
                     val intent = Intent(context, MainActivity::class.java)
                         .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                     views.setOnClickPendingIntent(R.id.widget_root, PendingIntent.getActivity(
@@ -249,46 +225,49 @@ open class ScheduleWidgetProvider : AppWidgetProvider() {
         private suspend fun widgetRows(
             repository: Repository, prefs: Preferences, date: LocalDate, now: LocalTime,
             options: WidgetOptions, context: Context
-        ): List<String> {
+        ): List<WidgetRow> {
             val selection = Selection(ScheduleKind.CLASS, prefs.home)
             suspend fun blocks(day: LocalDate) = repository.loadCached(prefs.host, day)?.timetable
                 ?.lessonBlocksOn(day, selection, prefs.hiddenGroups, prefs.cycleWeek)
-            fun line(block: LessonBlock): String {
+            fun line(block: LessonBlock, day: LocalDate? = null): WidgetRow {
                 val first = block.lessons.first()
                 val subject = if (block.isSplit) context.getString(R.string.widget_group_count, block.lessons.size) else first.subject
                 val details = buildList {
                     if (options.rooms && first.roomNames.isNotBlank() && !block.isSplit) add(first.roomNames)
                     if (options.teachers && first.teacherNames.isNotBlank() && !block.isSplit) add(first.teacherNames)
                 }.joinToString(" · ")
-                return "${block.start ?: "—"}  $subject${if (details.isBlank()) "" else " · $details"}"
+                val datedSubject = day?.let {
+                    "${it.format(DateTimeFormatter.ofPattern("EEE d", context.resources.configuration.locales[0]))} · $subject"
+                } ?: subject
+                return WidgetRow(block.start?.toString() ?: "—", datedSubject, details)
             }
             return when (options.mode) {
-                WidgetMode.TODAY -> blocks(date)?.take(4)?.map(::line)
-                    ?: listOf(context.getString(R.string.widget_open_to_save))
-                WidgetMode.TOMORROW -> blocks(date.plusDays(1))?.take(4)?.map(::line)
-                    ?: listOf(context.getString(R.string.widget_open_to_save))
+                WidgetMode.TODAY -> blocks(date)?.take(4)?.map { line(it) }
+                    ?: listOf(WidgetRow(subject = context.getString(R.string.widget_open_to_save)))
+                WidgetMode.TOMORROW -> blocks(date.plusDays(1))?.take(4)?.map { line(it) }
+                    ?: listOf(WidgetRow(subject = context.getString(R.string.widget_open_to_save)))
                 WidgetMode.NEXT -> {
                     // Include the current lesson, then look ahead across the week.
                     (0L..6L).firstNotNullOfOrNull { offset ->
                         val day = date.plusDays(offset)
                         blocks(day)?.firstOrNull { offset > 0 || it.end == null || it.end > now }
-                            ?.let { listOf(if (offset == 0L) line(it) else "${day.format(DateTimeFormatter.ofPattern("EEE d", context.resources.configuration.locales[0]))} · ${line(it)}") }
+                            ?.let { listOf(line(it, day.takeIf { offset > 0 })) }
                     }.orEmpty()
                 }
                 WidgetMode.UPCOMING -> {
                     val upcoming = (0L..6L).flatMap { offset ->
                         val day = date.plusDays(offset)
                         blocks(day).orEmpty().filter { offset > 0 || it.end == null || it.end > now }.map { block ->
-                            if (offset == 0L) line(block)
-                            else "${day.format(DateTimeFormatter.ofPattern("EEE d", context.resources.configuration.locales[0]))} · ${line(block)}"
+                            line(block, day.takeIf { offset > 0 })
                         }
                     }.take(4)
-                    upcoming.ifEmpty { listOf(context.getString(R.string.widget_open_to_save)) }
+                    upcoming.ifEmpty { listOf(WidgetRow(subject = context.getString(R.string.widget_open_to_save))) }
                 }
                 WidgetMode.WEEK -> (0L..3L).map { offset ->
                     val day = date.plusDays(offset)
                     val count = blocks(day)?.size
-                    "${day.format(DateTimeFormatter.ofPattern("EEE d", context.resources.configuration.locales[0]))} · ${if (count == null) context.getString(R.string.widget_not_saved) else context.getString(R.string.widget_lessons_count, count)}"
+                    WidgetRow(subject = day.format(DateTimeFormatter.ofPattern("EEE d", context.resources.configuration.locales[0])),
+                        details = if (count == null) context.getString(R.string.widget_not_saved) else context.getString(R.string.widget_lessons_count, count))
                 }
             }
         }
@@ -332,8 +311,10 @@ internal fun WidgetConfigScreen(options: WidgetOptions, onChange: (WidgetOptions
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = remember(context) { Preferences(context) }
     val colors = widgetColors(context, prefs, options)
+    val emptyMessage = stringResource(R.string.widget_open_to_save)
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
+            .safeDrawingPadding().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(stringResource(R.string.widget_configure), style = MaterialTheme.typography.headlineMedium)
@@ -341,32 +322,21 @@ internal fun WidgetConfigScreen(options: WidgetOptions, onChange: (WidgetOptions
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         Text(stringResource(R.string.widget_preview), style = MaterialTheme.typography.titleMedium)
-        val shape = MaterialTheme.shapes.extraLarge
-        val previewBorder = if (options.border == WidgetBorder.SOLID) BorderStroke(2.dp, Color(colors.outline)) else null
-        Surface(Modifier.fillMaxWidth().heightIn(min = 128.dp), shape = shape,
-            color = Color(colors.surface), border = previewBorder) {
-            Box {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(options.mode.label()), color = Color(colors.accent),
-                        style = MaterialTheme.typography.labelLarge)
-                    Text(stringResource(R.string.widget_open_to_save), color = Color(colors.text),
-                        style = MaterialTheme.typography.bodyMedium)
+        // Inflate the launcher RemoteViews rather than maintaining a second Compose imitation.
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val width = maxWidth.value.toInt().coerceAtLeast(100)
+            val height = if (options.mode == WidgetMode.NEXT) 128 else 240
+            val density = LocalDensity.current
+            AndroidView(
+                modifier = Modifier.fillMaxWidth().height(height.dp),
+                factory = { FrameLayout(it) },
+                update = { host ->
+                    host.removeAllViews()
+                    val views = scheduleWidgetViews(context, options, colors, width, height, emptyList(),
+                        emptyMessage, density.fontScale)
+                    host.addView(views.apply(context, host))
                 }
-                if (options.border == WidgetBorder.DASHED) {
-                    Box(Modifier.matchParentSize().drawWithContent {
-                        drawContent()
-                        val inset = 2.dp.toPx()
-                        drawRoundRect(
-                            color = Color(colors.outline),
-                            topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
-                            size = androidx.compose.ui.geometry.Size(size.width - inset * 2, size.height - inset * 2),
-                            cornerRadius = CornerRadius(26.dp.toPx()),
-                            style = Stroke(width = 2.dp.toPx(),
-                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx())))
-                        )
-                    })
-                }
-            }
+            )
         }
 
         Text(stringResource(R.string.widget_display), style = MaterialTheme.typography.titleMedium)

@@ -46,3 +46,5 @@ The committed fixture is synthetic. It covers split groups, duplicate group ids,
 ## Change comparisons
 
 Change notifications compare the published recurring lessons of the saved class in the selected cycle week and visible groups. They are not a substitutions/cancellation feed. Metadata-only revision changes and regenerated card IDs do not trigger an alert. A comparison retains its original detection timestamp and revision effective date; later timetable fetches do not rewrite it. Changing school/class starts an independent baseline, and hidden groups are applied equally to both snapshots. The first refresh after installing this feature is silent because earlier releases retained only a hash, not before-details.
+
+Widget styling and previews do not change timetable retrieval: widgets render only cached published lessons. Widget UI screenshot tests use synthetic subjects, rooms and teacher labels, never school responses.
