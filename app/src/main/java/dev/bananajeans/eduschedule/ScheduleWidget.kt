@@ -150,7 +150,7 @@ internal object ScheduleWidgets {
         if (Build.VERSION.SDK_INT < 35) return
         val settings = context.getSharedPreferences(SETTINGS, Context.MODE_PRIVATE)
         val configuration = context.resources.configuration
-        val signature = "v2:${BuildConfig.VERSION_CODE}:${configuration.locales.toLanguageTags()}:${configuration.uiMode}"
+        val signature = "v3:${BuildConfig.VERSION_CODE}:${configuration.locales.toLanguageTags()}:${configuration.uiMode}"
         val manager = AppWidgetManager.getInstance(context)
         listOf(
             ScheduleWidgetProvider::class.java to R.layout.widget_preview_today,

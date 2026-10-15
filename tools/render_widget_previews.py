@@ -37,20 +37,33 @@ def fit(draw, text, font, width):
 
 def render(locale, dark, mode):
     title, lines = DATA[locale][mode]
-    width, height = 180 * SCALE, (100 if mode == 'next' else 180) * SCALE
+    width, height = 320 * SCALE, (128 if mode == 'next' else 240) * SCALE
     image = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
-    surface, text, accent = ('#253024', '#E2E9DE', '#B5CEA8') if dark else ('#F1F5EB', '#1A2819', '#426437')
+    surface, text, accent = ('#242824', '#FFFFFF', '#B5CEA8') if dark else ('#EFF0EA', '#000000', '#426437')
     draw.rounded_rectangle((0, 0, width-1, height-1), radius=28*SCALE, fill=surface)
-    title_font = ImageFont.truetype(str(FONTS/'DejaVuSans-Bold.ttf'), 14*SCALE)
+    title_font = ImageFont.truetype(str(FONTS/'DejaVuSans-Bold.ttf'), 16*SCALE)
     body_font = ImageFont.truetype(str(FONTS/'DejaVuSans.ttf'), 14*SCALE)
     caption_font = ImageFont.truetype(str(FONTS/'DejaVuSans.ttf'), 10*SCALE)
-    x, y, content_width = 16*SCALE, 16*SCALE, 148*SCALE
+    subject_font = ImageFont.truetype(str(FONTS/'DejaVuSans-Bold.ttf'), 16*SCALE)
+    detail_font = ImageFont.truetype(str(FONTS/'DejaVuSans.ttf'), 12*SCALE)
+    secondary = '#C3C4C3' if dark else '#50504E'
+    x, y, content_width = 16*SCALE, 16*SCALE, 288*SCALE
     draw.text((x, y), fit(draw, title, title_font, content_width), font=title_font, fill=accent)
-    y += 28*SCALE
+    y += 36*SCALE
     for line in lines:
-        draw.text((x, y), fit(draw, line, body_font, content_width), font=body_font, fill=text)
-        y += 27*SCALE
+        time, separator, content = line.partition('  ')
+        if separator:
+            subject, _, details = content.partition(' · ')
+            draw.text((x, y), time, font=body_font, fill=text)
+            subject_x, available = x + 64*SCALE, content_width - 64*SCALE
+        else:
+            subject, _, details = line.partition(' · ')
+            subject_x, available = x, content_width
+        draw.text((subject_x, y), fit(draw, subject, subject_font, available), font=subject_font, fill=text)
+        if details and mode != 'next':
+            draw.text((subject_x, y+24*SCALE), fit(draw, details, detail_font, available), font=detail_font, fill=secondary)
+        y += 54*SCALE
     draw.text((x, height-26*SCALE), DATA[locale]['example'], font=caption_font, fill=accent)
     qualifiers = ('-'+locale if locale else '') + ('-night' if dark else '')
     output = RES / ('drawable'+qualifiers+'-nodpi') / f'widget_preview_{mode}.png'
