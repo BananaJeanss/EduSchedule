@@ -46,7 +46,7 @@ def render(locale, dark, mode):
     body_font = ImageFont.truetype(str(FONTS/'DejaVuSans.ttf'), 14*SCALE)
     caption_font = ImageFont.truetype(str(FONTS/'DejaVuSans.ttf'), 10*SCALE)
     subject_font = ImageFont.truetype(str(FONTS/'DejaVuSans-Bold.ttf'), 16*SCALE)
-    detail_font = ImageFont.truetype(str(FONTS/'DejaVuSans.ttf'), 12*SCALE)
+    detail_font = ImageFont.truetype(str(FONTS/'DejaVuSans.ttf'), 14*SCALE)
     secondary = '#C3C4C3' if dark else '#50504E'
     x, y, content_width = 16*SCALE, 16*SCALE, 288*SCALE
     draw.text((x, y), fit(draw, title, title_font, content_width), font=title_font, fill=accent)

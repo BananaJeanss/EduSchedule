@@ -38,7 +38,7 @@ internal fun scheduleWidgetViews(
     for ((index, row) in rows.take(options.maxRows).withIndex()) {
         val stacked = !compact && widthDp < 260 && row.time.isNotBlank()
         val details = row.details.takeUnless { compact }.orEmpty()
-        val rowHeight = 12 + ((if (details.isBlank()) 24 else 42) + (if (stacked) 22 else 0)) * fontScale
+        val rowHeight = 12 + ((if (details.isBlank()) 24 else 48) + (if (stacked) 22 else 0)) * fontScale
         if (index > 0 && available < rowHeight) break
         available -= rowHeight
         val item = RemoteViews(context.packageName,
@@ -55,10 +55,10 @@ internal fun scheduleWidgetViews(
         item.setTextColor(R.id.widget_time, colors.text)
         item.setTextColor(R.id.widget_subject, colors.text)
         item.setTextColor(R.id.widget_details, colors.secondaryText)
-        // Material titleSmall/titleMedium/bodySmall roles, expressed for RemoteViews.
+        // Material titleSmall/titleMedium/bodyMedium roles, expressed for RemoteViews.
         item.setTextViewTextSize(R.id.widget_time, TypedValue.COMPLEX_UNIT_SP, 14f)
         item.setTextViewTextSize(R.id.widget_subject, TypedValue.COMPLEX_UNIT_SP, 16f)
-        item.setTextViewTextSize(R.id.widget_details, TypedValue.COMPLEX_UNIT_SP, 12f)
+        item.setTextViewTextSize(R.id.widget_details, TypedValue.COMPLEX_UNIT_SP, 14f)
         views.addView(R.id.widget_rows, item)
     }
     return views
