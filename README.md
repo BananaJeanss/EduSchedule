@@ -58,3 +58,5 @@ In a class schedule, tap a group lesson and use “Default this group” below �
 
 
 Tapping a timetable-change notification opens an offline comparison for your saved class, with added, removed and changed lessons and readable Before/Now details. The first refresh after upgrading establishes the comparison baseline.
+
+Widgets use the same time/subject/detail hierarchy and surface colors as in-app lesson cards. Their configuration preview uses the actual launcher layout; compact sizes and large fonts show fewer complete rows.
