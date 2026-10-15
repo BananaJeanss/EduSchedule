@@ -311,6 +311,7 @@ internal fun WidgetConfigScreen(options: WidgetOptions, onChange: (WidgetOptions
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = remember(context) { Preferences(context) }
     val colors = widgetColors(context, prefs, options)
+    val emptyMessage = stringResource(R.string.widget_open_to_save)
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
             .safeDrawingPadding().verticalScroll(rememberScrollState()).padding(20.dp),
@@ -332,7 +333,7 @@ internal fun WidgetConfigScreen(options: WidgetOptions, onChange: (WidgetOptions
                 update = { host ->
                     host.removeAllViews()
                     val views = scheduleWidgetViews(context, options, colors, width, height, emptyList(),
-                        context.getString(R.string.widget_open_to_save), density.fontScale)
+                        emptyMessage, density.fontScale)
                     host.addView(views.apply(context, host))
                 }
             )

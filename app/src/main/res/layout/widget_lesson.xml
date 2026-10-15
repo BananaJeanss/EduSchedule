@@ -3,7 +3,7 @@
     android:orientation="horizontal" android:paddingTop="12dp"
     android:baselineAligned="false">
     <TextView android:id="@+id/widget_time"
-        android:layout_width="48dp" android:layout_height="wrap_content"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
         android:layout_marginEnd="16dp" android:textSize="14sp" android:textStyle="bold"
         android:fontFamily="sans-serif-medium" android:maxLines="1" android:ellipsize="end" />
     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"

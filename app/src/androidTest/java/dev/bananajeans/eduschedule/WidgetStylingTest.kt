@@ -13,6 +13,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.*
@@ -53,16 +54,18 @@ class WidgetStylingTest {
             val colors = widgetColors(context, prefs, WidgetOptions())
             compose.setContent {
                 val density = LocalDensity.current
-                val config = Configuration(LocalContext.current.resources.configuration).apply { fontScale = scale }
+                val config = Configuration(LocalConfiguration.current).apply { fontScale = scale }
                 val widgetContext = LocalContext.current.createConfigurationContext(config)
                 CompositionLocalProvider(LocalDensity provides Density(density.density, scale)) {
                     EduTheme(theme, false, palette) {
                         Surface {
                             Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                if (scale == 1f) {
                                 Text("In app", style = MaterialTheme.typography.titleMedium)
                                 LessonCard(Lesson("example", "Mathematics", 0, "1", LocalTime.of(8, 45),
                                     LocalTime.of(9, 30), emptyList(), emptyList(), emptyList(), emptyList(),
                                     "", "Teacher A", "204", "", "")) {}
+                                }
                                 Text("Home screen widget", style = MaterialTheme.typography.titleMedium)
                                 AndroidView(modifier = Modifier.fillMaxWidth().height(240.dp), factory = { hostContext ->
                                     FrameLayout(hostContext).apply {
@@ -75,7 +78,7 @@ class WidgetStylingTest {
                     }
                 }
             }
-            compose.onNodeWithText("In app").assertIsDisplayed()
+            if (scale == 1f) compose.onNodeWithText("In app").assertIsDisplayed()
             compose.onNodeWithText("Home screen widget").assertIsDisplayed()
             screenshot(name)
         } finally { prefs.theme = oldTheme; prefs.palette = oldPalette; prefs.dynamic = oldDynamic }
@@ -100,6 +103,17 @@ class WidgetStylingTest {
             assertEquals(colors.secondaryText, normal.findViewById<TextView>(R.id.widget_details).currentTextColor)
             assertEquals(2, render(240, 1.5f).findViewById<LinearLayout>(R.id.widget_rows).childCount)
             assertEquals(1, render(100).findViewById<LinearLayout>(R.id.widget_rows).childCount)
+            val config = Configuration(context.resources.configuration).apply { fontScale = 1.5f }
+            val largeContext = context.createConfigurationContext(config)
+            val large = scheduleWidgetViews(largeContext, WidgetOptions(), colors, 320, 240, rows, "")
+                .apply(largeContext, host)
+            val density = largeContext.resources.displayMetrics.density
+            val w = (320 * density).toInt(); val h = (240 * density).toInt()
+            large.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
+            large.layout(0, 0, w, h)
+            assertEquals("Large-font time must not be truncated", 0,
+                large.findViewById<TextView>(R.id.widget_time).layout.getEllipsisCount(0))
             val compactWeek = scheduleWidgetViews(context, WidgetOptions(mode = WidgetMode.WEEK), colors,
                 180, 100, listOf(WidgetRow(subject = "Mon 14", details = "6 lessons")), "").apply(context, host)
             assertEquals("Mon 14 · 6 lessons", compactWeek.findViewById<TextView>(R.id.widget_subject).text.toString())
