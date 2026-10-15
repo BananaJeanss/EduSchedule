@@ -1,6 +1,7 @@
 package dev.bananajeans.eduschedule
 
 import android.content.res.Configuration
+import android.graphics.Canvas
 import android.graphics.Bitmap
 import android.view.View
 import android.widget.FrameLayout
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -62,7 +64,7 @@ class WidgetStylingTest {
                                     LocalTime.of(9, 30), emptyList(), emptyList(), emptyList(), emptyList(),
                                     "", "Teacher A", "204", "", "")) {}
                                 Text("Home screen widget", style = MaterialTheme.typography.titleMedium)
-                                AndroidView(Modifier.fillMaxWidth().height(240.dp), factory = { hostContext ->
+                                AndroidView(modifier = Modifier.fillMaxWidth().height(240.dp), factory = { hostContext ->
                                     FrameLayout(hostContext).apply {
                                         addView(scheduleWidgetViews(widgetContext, WidgetOptions(), colors, 320, 240,
                                             rows, "", scale).apply(widgetContext, this))
@@ -104,6 +106,35 @@ class WidgetStylingTest {
         }
     }
 
+    @Test fun compactModesAndBordersRenderOnAndroid() {
+        compose.runOnUiThread {
+            val colors = widgetColors(context, Preferences(context), WidgetOptions())
+            val output = InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
+            val dir = File(output?.let { File(it) } ?: context.getExternalFilesDir(null)!!,
+                "widget-screenshots").apply { mkdirs() }
+            for (mode in WidgetMode.entries) {
+                val options = WidgetOptions(mode = mode, border = WidgetBorder.DASHED)
+                val height = if (mode == WidgetMode.NEXT) 100 else 240
+                val data = if (mode == WidgetMode.WEEK)
+                    listOf(WidgetRow(subject = "Mon 14", details = "6 lessons"),
+                        WidgetRow(subject = "Tue 15", details = "5 lessons")) else rows
+                val view = scheduleWidgetViews(context, options, colors, 180, height, data, "")
+                    .apply(context, FrameLayout(context))
+                val density = context.resources.displayMetrics.density
+                val w = (180 * density).toInt(); val h = (height * density).toInt()
+                view.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
+                view.layout(0, 0, w, h)
+                val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                view.draw(Canvas(bitmap))
+                File(dir, "compact-${mode.name.lowercase()}.png").outputStream().use {
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+                }
+                assertTrue(view.findViewById<LinearLayout>(R.id.widget_rows).childCount > 0)
+            }
+        }
+    }
+
     @Test fun followAppMatchesEveryPresetInBothModes() {
         val prefs = Preferences(context)
         val oldTheme = prefs.theme; val oldPalette = prefs.palette; val oldDynamic = prefs.dynamic
@@ -113,8 +144,8 @@ class WidgetStylingTest {
                 prefs.theme = if (dark) "Dark" else "Light"; prefs.palette = palette
                 val scheme = themeScheme(palette, dark, prefs.customColors)
                 val actual = widgetColors(context, prefs, WidgetOptions())
-                assertEquals(scheme.surfaceContainer.value, androidx.compose.ui.graphics.Color(actual.surface).value)
-                assertEquals(scheme.onSurfaceVariant.value, androidx.compose.ui.graphics.Color(actual.secondaryText).value)
+                assertEquals(scheme.surfaceContainer.toArgb(), actual.surface)
+                assertEquals(scheme.onSurfaceVariant.toArgb(), actual.secondaryText)
             }
         } finally { prefs.theme = oldTheme; prefs.palette = oldPalette; prefs.dynamic = oldDynamic }
     }

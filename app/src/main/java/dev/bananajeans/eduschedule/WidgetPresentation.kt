@@ -20,6 +20,13 @@ internal fun scheduleWidgetViews(
         widgetBackground(widthDp, heightDp, colors, options.border, 1f))
     views.setTextViewText(R.id.widget_title, context.getString(options.mode.label()))
     views.setTextColor(R.id.widget_title, colors.accent)
+    val compact = heightDp < 140
+    val density = context.resources.displayMetrics.density
+    val padding = ((if (compact) 12 else 16) * density).toInt()
+    views.setViewPadding(R.id.widget_content, padding, padding, padding, padding)
+    val showTitle = !compact || heightDp >= 100 || fontScale <= 1.3f
+    views.setViewVisibility(R.id.widget_title, if (showTitle) View.VISIBLE else View.GONE)
+    views.setInt(R.id.widget_empty, "setMaxLines", if (compact) 1 else 2)
     views.removeAllViews(R.id.widget_rows)
     views.setTextViewText(R.id.widget_empty, emptyMessage)
     views.setTextColor(R.id.widget_empty, colors.secondaryText)
@@ -27,17 +34,22 @@ internal fun scheduleWidgetViews(
 
     // Reserve scaled title/padding space, then fit whole rows. At least one row remains
     // available on compact widgets; Android ellipsizes its text rather than shrinking it.
-    var available = heightDp - 32 - 24 * fontScale
+    var available = heightDp - (if (compact) 24 else 32) - (if (showTitle) 24 * fontScale else 0f)
     for ((index, row) in rows.take(options.maxRows).withIndex()) {
-        val rowHeight = 12 + (if (row.details.isBlank()) 24 else 42) * fontScale
+        val stacked = !compact && widthDp < 260 && row.time.isNotBlank()
+        val details = row.details.takeUnless { compact }.orEmpty()
+        val rowHeight = 12 + ((if (details.isBlank()) 24 else 42) + (if (stacked) 22 else 0)) * fontScale
         if (index > 0 && available < rowHeight) break
         available -= rowHeight
-        val item = RemoteViews(context.packageName, R.layout.widget_lesson)
+        val item = RemoteViews(context.packageName,
+            if (stacked) R.layout.widget_lesson_compact else R.layout.widget_lesson)
+        if (!stacked) item.setInt(R.id.widget_time, "setWidth",
+            (48 * fontScale * context.resources.displayMetrics.density).toInt())
         item.setTextViewText(R.id.widget_time, row.time)
         item.setViewVisibility(R.id.widget_time, if (row.time.isBlank()) View.GONE else View.VISIBLE)
         item.setTextViewText(R.id.widget_subject, row.subject)
-        item.setTextViewText(R.id.widget_details, row.details)
-        item.setViewVisibility(R.id.widget_details, if (row.details.isBlank()) View.GONE else View.VISIBLE)
+        item.setTextViewText(R.id.widget_details, details)
+        item.setViewVisibility(R.id.widget_details, if (details.isBlank()) View.GONE else View.VISIBLE)
         item.setTextColor(R.id.widget_time, colors.text)
         item.setTextColor(R.id.widget_subject, colors.text)
         item.setTextColor(R.id.widget_details, colors.secondaryText)
