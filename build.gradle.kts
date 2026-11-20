@@ -9,7 +9,7 @@ buildscript {
             "org.bitbucket.b_c:jose4j:0.9.7",
             "org.bouncycastle:bcprov-jdk18on:1.86",
             "org.bouncycastle:bcpkix-jdk18on:1.86",
-            "org.bouncycastle:bcutil-jdk18on:1.86"
+            "org.bouncycastle:bcutil-jdk18on:1.87"
         )
     }
 }
